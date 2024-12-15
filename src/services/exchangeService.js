@@ -47,6 +47,8 @@ class ExchangeService {
         this.okxApiSecret = apiSecret;
         if (passphrase) this.okxPassphrase = passphrase;
         break;
+      default:
+        console.warn('Unknown exchange:', exchange);
     }
   }
 
@@ -187,7 +189,7 @@ class ExchangeService {
 
       const timestamp = new Date().toISOString();
       const method = 'GET';
-      const path = '/api/v5/account/balance';
+      const path = '/api/v5/asset/balances';
       const signature = this.signOKX(timestamp, method, path);
 
       const response = await axios.get('https://www.okx.com' + path, {
@@ -199,25 +201,27 @@ class ExchangeService {
         },
       });
 
+      console.log('OKX Response:', response.data);
+
       const balances = [];
       let totalUSD = 0;
 
-      if (response.data.data && response.data.data[0]?.details) {
-        response.data.data[0].details.forEach((detail) => {
-          const cashBal = Number(detail.cashBal) || 0;
-          const availBal = Number(detail.availBal) || 0;
-          const eqUsd = Number(detail.eqUsd) || 0;
+      if (response.data.data) {
+        for (const balance of response.data.data) {
+          const cashBal = Number(balance.bal) || 0;
+          const availBal = Number(balance.availBal) || 0;
+          const usdValue = Number(balance.usdValue) || 0;
 
           if (cashBal > 0) {
             balances.push({
-              asset: detail.ccy,
+              asset: balance.ccy,
               free: availBal,
               locked: cashBal - availBal,
               total: cashBal
             });
-            totalUSD += eqUsd;
+            totalUSD += usdValue;
           }
-        });
+        }
       }
 
       return {
