@@ -210,14 +210,10 @@ class ExchangeService {
       // Use allorigins as a proxy
       const proxyUrl = 'https://api.allorigins.win/get?url=';
       const encodedUrl = encodeURIComponent(
-        `https://api.binance.com/api/v3/account?timestamp=${timestamp}&signature=${signature}`
+        `https://api.binance.com/api/v3/account?timestamp=${timestamp}&signature=${signature}&apiKey=${this.binanceApiKey}`
       );
 
-      const response = await axios.get(`${proxyUrl}${encodedUrl}`, {
-        headers: {
-          'X-MBX-APIKEY': this.binanceApiKey
-        }
-      });
+      const response = await axios.get(`${proxyUrl}${encodedUrl}`);
 
       // Parse the response from the proxy
       const binanceData = JSON.parse(response.data.contents);
