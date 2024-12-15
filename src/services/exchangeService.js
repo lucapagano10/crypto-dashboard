@@ -207,9 +207,11 @@ class ExchangeService {
         signature
       });
 
-      const response = await axios.get('https://api.binance.com/sapi/v1/capital/config/getall', {
+      const response = await axios.get('https://testnet.binance.vision/sapi/v1/capital/config/getall', {
         headers: {
           'X-MBX-APIKEY': this.binanceApiKey,
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
         },
         params: {
           timestamp,
