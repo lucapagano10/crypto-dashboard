@@ -207,26 +207,34 @@ class ExchangeService {
         signature
       });
 
-      // Use cors-anywhere proxy
-      const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-      const response = await axios.get(`${proxyUrl}https://api.binance.com/sapi/v1/asset/wallet/balance`, {
+      // Use allorigins as a proxy
+      const proxyUrl = 'https://api.allorigins.win/get?url=';
+      const encodedUrl = encodeURIComponent(
+        `https://api.binance.com/api/v3/account?timestamp=${timestamp}&signature=${signature}`
+      );
+
+      const response = await axios.get(`${proxyUrl}${encodedUrl}`, {
         headers: {
-          'X-MBX-APIKEY': this.binanceApiKey,
-          'Origin': 'https://lucapagano10.github.io'
-        },
-        params: {
-          timestamp,
-          signature,
-        },
+          'X-MBX-APIKEY': this.binanceApiKey
+        }
       });
 
-      console.log('Binance Response:', response.data);
+      // Parse the response from the proxy
+      const binanceData = JSON.parse(response.data.contents);
+      console.log('Binance Response:', binanceData);
 
       const balances = [];
       let totalUSD = 0;
 
-      if (response.data) {
-        for (const balance of response.data) {
+      // Get prices for USD conversion
+      const pricesResponse = await axios.get(`${proxyUrl}${encodeURIComponent('https://api.binance.com/api/v3/ticker/price')}`);
+      const prices = new Map();
+      JSON.parse(pricesResponse.data.contents).forEach((item) => {
+        prices.set(item.symbol, Number(item.price));
+      });
+
+      if (binanceData.balances) {
+        for (const balance of binanceData.balances) {
           const free = Number(balance.free) || 0;
           const locked = Number(balance.locked) || 0;
           const total = free + locked;
@@ -239,25 +247,18 @@ class ExchangeService {
               total
             });
 
-            // For stable coins, use the balance directly
+            // Calculate USD value
+            let usdValue = 0;
             if (balance.asset === 'USDT' || balance.asset === 'BUSD' || balance.asset === 'USD') {
-              totalUSD += total;
+              usdValue = total;
             } else {
-              // Get the current price for non-stablecoins using the proxy
-              try {
-                const priceResponse = await axios.get(`${proxyUrl}https://api.binance.com/api/v3/ticker/price?symbol=${balance.asset}USDT`, {
-                  headers: {
-                    'Origin': 'https://lucapagano10.github.io'
-                  }
-                });
-                const price = Number(priceResponse.data.price) || 0;
-                const usdValue = total * price;
-                totalUSD += usdValue;
-                console.log(`Adding ${balance.asset} balance: ${total}, USD value: ${usdValue}`);
-              } catch (priceError) {
-                console.warn(`Could not get price for ${balance.asset}:`, priceError.message);
-              }
+              const symbol = `${balance.asset}USDT`;
+              const price = prices.get(symbol) || 0;
+              usdValue = total * price;
             }
+
+            totalUSD += usdValue;
+            console.log(`Adding ${balance.asset} balance: ${total}, USD value: ${usdValue}`);
           }
         }
       }
