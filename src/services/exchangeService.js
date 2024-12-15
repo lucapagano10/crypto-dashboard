@@ -121,7 +121,7 @@ class ExchangeService {
       }
 
       const timestamp = Date.now().toString();
-      const queryParams = 'accountType=FUND';
+      const queryParams = 'accountType=UNIFIED';
       const signature = this.signBybit(timestamp, queryParams);
 
       console.log('Bybit Request Details:', {
@@ -139,7 +139,7 @@ class ExchangeService {
           'X-BAPI-RECV-WINDOW': '5000'
         },
         params: {
-          accountType: 'FUND'
+          accountType: 'UNIFIED'
         }
       });
 
