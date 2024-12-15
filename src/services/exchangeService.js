@@ -79,7 +79,10 @@ class ExchangeService {
       .sort()
       .map(key => `${key}=${params[key]}`)
       .join('&');
-    return CryptoJS.HmacSHA256(queryString, this.bybitApiSecret)
+
+    console.log('Bybit signature string:', timestamp + this.bybitApiKey + '5000' + queryString);
+
+    return CryptoJS.HmacSHA256(timestamp + this.bybitApiKey + '5000' + queryString, this.bybitApiSecret)
       .toString(CryptoJS.enc.Hex);
   }
 
