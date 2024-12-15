@@ -75,13 +75,9 @@ class ExchangeService {
   }
 
   signBybit(timestamp, params) {
-    const paramsString = Object.keys(params)
-      .sort()
-      .map(key => `${key}=${params[key]}`)
-      .join('&');
-
-    console.log('Params string:', paramsString);
-    return CryptoJS.HmacSHA256(paramsString, this.bybitApiSecret).toString(CryptoJS.enc.Hex);
+    const signString = timestamp + this.bybitApiKey + "5000" + "accountType=FUND";
+    console.log('Bybit sign string:', signString);
+    return CryptoJS.HmacSHA256(signString, this.bybitApiSecret).toString(CryptoJS.enc.Hex);
   }
 
   signBinance(queryString) {
@@ -125,18 +121,10 @@ class ExchangeService {
       }
 
       const timestamp = Date.now().toString();
-      const params = {
-        api_key: this.bybitApiKey,
-        timestamp: timestamp,
-        recv_window: "5000",
-        accountType: "FUND"
-      };
-
-      const signature = this.signBybit(timestamp, params);
+      const signature = this.signBybit(timestamp);
 
       console.log('Bybit Request:', {
         url: 'https://api.bybit.com/v5/account/wallet-balance',
-        params,
         timestamp,
         signature
       });
