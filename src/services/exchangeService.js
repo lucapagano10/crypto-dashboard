@@ -207,7 +207,8 @@ class ExchangeService {
         signature
       });
 
-      const response = await axios.get('https://api.binance.com/api/v3/account', {
+      // First, get the funding wallet balance
+      const response = await axios.get('https://api.binance.com/sapi/v1/asset/wallet/balance', {
         headers: {
           'X-MBX-APIKEY': this.binanceApiKey
         },
@@ -222,15 +223,8 @@ class ExchangeService {
       const balances = [];
       let totalUSD = 0;
 
-      // Get prices for USD conversion
-      const pricesResponse = await axios.get('https://api.binance.com/api/v3/ticker/price');
-      const prices = new Map();
-      pricesResponse.data.forEach((item) => {
-        prices.set(item.symbol, Number(item.price));
-      });
-
-      if (response.data.balances) {
-        for (const balance of response.data.balances) {
+      if (response.data) {
+        for (const balance of response.data) {
           const free = Number(balance.free) || 0;
           const locked = Number(balance.locked) || 0;
           const total = free + locked;
@@ -243,18 +237,21 @@ class ExchangeService {
               total
             });
 
-            // Calculate USD value
-            let usdValue = 0;
+            // For stable coins, use the balance directly
             if (balance.asset === 'USDT' || balance.asset === 'BUSD' || balance.asset === 'USD') {
-              usdValue = total;
+              totalUSD += total;
             } else {
-              const symbol = `${balance.asset}USDT`;
-              const price = prices.get(symbol) || 0;
-              usdValue = total * price;
+              // Get the current price for non-stablecoins
+              try {
+                const priceResponse = await axios.get(`https://api.binance.com/api/v3/ticker/price?symbol=${balance.asset}USDT`);
+                const price = Number(priceResponse.data.price) || 0;
+                const usdValue = total * price;
+                totalUSD += usdValue;
+                console.log(`Adding ${balance.asset} balance: ${total}, USD value: ${usdValue}`);
+              } catch (priceError) {
+                console.warn(`Could not get price for ${balance.asset}:`, priceError.message);
+              }
             }
-
-            totalUSD += usdValue;
-            console.log(`Adding ${balance.asset} balance: ${total}, USD value: ${usdValue}`);
           }
         }
       }
