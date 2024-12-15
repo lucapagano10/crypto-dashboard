@@ -74,15 +74,10 @@ class ExchangeService {
     localStorage.removeItem(STORAGE_KEY);
   }
 
-  signBybit(params) {
-    // Sort & sign the query string
-    const sortedQueryString = Object.keys(params)
-      .sort()
-      .map(key => `${key}=${encodeURIComponent(params[key])}`)
-      .join('&');
-
-    console.log('Bybit sign string:', sortedQueryString);
-    return CryptoJS.HmacSHA256(sortedQueryString, this.bybitApiSecret).toString(CryptoJS.enc.Hex);
+  signBybit(timestamp, params) {
+    const queryString = timestamp + this.bybitApiKey + '5000' + params;
+    console.log('Bybit sign string:', queryString);
+    return CryptoJS.HmacSHA256(queryString, this.bybitApiSecret).toString(CryptoJS.enc.Hex);
   }
 
   signBinance(queryString) {
@@ -126,22 +121,14 @@ class ExchangeService {
       }
 
       const timestamp = Date.now().toString();
-
-      // Include all required parameters:
-      const params = {
-        accountType: 'FUND',
-        api_key: this.bybitApiKey,
-        recv_window: '5000',
-        timestamp
-      };
-
-      const signature = this.signBybit(params);
+      const queryParams = 'accountType=FUND';
+      const signature = this.signBybit(timestamp, queryParams);
 
       console.log('Bybit Request Details:', {
         timestamp,
         apiKey: this.bybitApiKey,
         signature,
-        params
+        queryParams
       });
 
       const response = await axios.get('https://api.bybit.com/v5/account/wallet-balance', {
