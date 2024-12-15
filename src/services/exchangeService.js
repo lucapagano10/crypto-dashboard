@@ -75,14 +75,17 @@ class ExchangeService {
   }
 
   signBybit(timestamp, params) {
-    const paramsString = Object.keys(params)
+    const { api_key, ...queryParams } = params;
+
+    const paramsString = Object.keys(queryParams)
       .sort()
-      .map(key => `${key}=${params[key]}`)
+      .map(key => `${key}=${queryParams[key]}`)
       .join('&');
 
-    console.log('Bybit signature string:', paramsString);
+    const signString = timestamp + this.bybitApiKey + "5000" + paramsString;
+    console.log('Bybit signature string:', signString);
 
-    return CryptoJS.HmacSHA256(paramsString, this.bybitApiSecret).toString(CryptoJS.enc.Hex);
+    return CryptoJS.HmacSHA256(signString, this.bybitApiSecret).toString(CryptoJS.enc.Hex);
   }
 
   signBinance(queryString) {
@@ -127,10 +130,8 @@ class ExchangeService {
 
       const timestamp = Date.now().toString();
       const params = {
-        api_key: this.bybitApiKey,
-        timestamp: timestamp,
-        recv_window: "5000",
-        accountType: "FUND"
+        accountType: "FUND",
+        timestamp: timestamp
       };
 
       const signature = this.signBybit(timestamp, params);
