@@ -124,9 +124,13 @@ class ExchangeService {
       }
 
       const timestamp = Date.now().toString();
-      const params = { timestamp };
+      const params = {
+        timestamp,
+        accountType: "SPOT"  // Specify SPOT account type
+      };
       const signature = this.signBybit(timestamp, params);
 
+      // First get the wallet balance
       const response = await axios.get('https://api.bybit.com/v5/account/wallet-balance', {
         headers: {
           'X-BAPI-API-KEY': this.bybitApiKey,
@@ -136,26 +140,51 @@ class ExchangeService {
         params,
       });
 
+      console.log('Bybit Response:', response.data);
+
       const balances = [];
       let totalUSD = 0;
 
-      if (response.data.result && response.data.result.list) {
-        response.data.result.list.forEach((coin) => {
-          const walletBalance = Number(coin.walletBalance) || 0;
-          const availableToWithdraw = Number(coin.availableToWithdraw) || 0;
-          const usdValue = Number(coin.usdValue) || 0;
+      // Get spot account balances
+      const spotResponse = await axios.get('https://api.bybit.com/v5/asset/transfer/query-account-coins-balance', {
+        headers: {
+          'X-BAPI-API-KEY': this.bybitApiKey,
+          'X-BAPI-SIGN': signature,
+          'X-BAPI-TIMESTAMP': timestamp,
+        },
+        params: {
+          ...params,
+          accountType: "SPOT"
+        }
+      });
 
-          if (walletBalance > 0) {
+      console.log('Bybit Spot Response:', spotResponse.data);
+
+      if (spotResponse.data.result && spotResponse.data.result.balance) {
+        for (const balance of spotResponse.data.result.balance) {
+          const total = Number(balance.walletBalance) || 0;
+          const free = Number(balance.transferBalance) || 0;
+
+          if (total > 0) {
+            // For USDT and USD, use the balance as the USD value
+            const usdValue = balance.coin === 'USDT' || balance.coin === 'USD'
+              ? total
+              : Number(balance.transferBalanceInUsd) || 0;
+
             balances.push({
-              asset: coin.coin,
-              free: availableToWithdraw,
-              locked: walletBalance - availableToWithdraw,
-              total: walletBalance
+              asset: balance.coin,
+              free,
+              locked: total - free,
+              total
             });
+
             totalUSD += usdValue;
+            console.log(`Adding ${balance.coin} balance: ${total}, USD value: ${usdValue}`);
           }
-        });
+        }
       }
+
+      console.log('Bybit Total USD Value:', totalUSD);
 
       return {
         exchange: 'Bybit',
