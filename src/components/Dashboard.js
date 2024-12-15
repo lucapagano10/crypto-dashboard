@@ -33,12 +33,12 @@ import {
   Th,
   Td,
 } from '@chakra-ui/react';
-import { exchangeService, AggregatedBalance } from '../services/exchangeService';
+import { exchangeService } from '../services/exchangeService';
 
-export const Dashboard: React.FC = () => {
-  const [balances, setBalances] = useState<AggregatedBalance[]>([]);
+export const Dashboard = () => {
+  const [balances, setBalances] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedExchange, setSelectedExchange] = useState<string>('');
+  const [selectedExchange, setSelectedExchange] = useState('');
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
 
@@ -64,7 +64,7 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  const handleSetCredentials = (exchange: string) => {
+  const handleSetCredentials = (exchange) => {
     setSelectedExchange(exchange);
     setApiKey('');
     setApiSecret('');
