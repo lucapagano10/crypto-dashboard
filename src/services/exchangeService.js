@@ -78,7 +78,7 @@ class ExchangeService {
     // Sort & sign the query string
     const sortedQueryString = Object.keys(params)
       .sort()
-      .map(key => `${key}=${params[key]}`)
+      .map(key => `${key}=${encodeURIComponent(params[key])}`)
       .join('&');
 
     console.log('Bybit sign string:', sortedQueryString);
@@ -132,15 +132,16 @@ class ExchangeService {
         accountType: 'FUND',
         api_key: this.bybitApiKey,
         recv_window: '5000',
-        timestamp,
+        timestamp
       };
 
       const signature = this.signBybit(params);
 
-      console.log('Bybit Request:', {
-        url: 'https://api.bybit.com/v5/account/wallet-balance',
-        params,
-        signature
+      console.log('Bybit Request Details:', {
+        timestamp,
+        apiKey: this.bybitApiKey,
+        signature,
+        params
       });
 
       const response = await axios.get('https://api.bybit.com/v5/account/wallet-balance', {
@@ -150,7 +151,9 @@ class ExchangeService {
           'X-BAPI-TIMESTAMP': timestamp,
           'X-BAPI-RECV-WINDOW': '5000'
         },
-        params: params
+        params: {
+          accountType: 'FUND'
+        }
       });
 
       console.log('Bybit Response:', response.data);
