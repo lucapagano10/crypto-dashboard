@@ -74,10 +74,10 @@ class ExchangeService {
     localStorage.removeItem(STORAGE_KEY);
   }
 
-  signBybit(timestamp, params) {
-    const signString = timestamp + this.bybitApiKey + "5000" + "accountType=FUND";
-    console.log('Bybit sign string:', signString);
-    return CryptoJS.HmacSHA256(signString, this.bybitApiSecret).toString(CryptoJS.enc.Hex);
+  signBybit(timestamp) {
+    const queryString = `accountType=FUND&api_key=${this.bybitApiKey}&recv_window=5000&timestamp=${timestamp}`;
+    console.log('Bybit sign string:', queryString);
+    return CryptoJS.HmacSHA256(queryString, this.bybitApiSecret).toString(CryptoJS.enc.Hex);
   }
 
   signBinance(queryString) {
@@ -137,7 +137,10 @@ class ExchangeService {
           'X-BAPI-RECV-WINDOW': "5000"
         },
         params: {
-          accountType: "FUND"
+          accountType: "FUND",
+          api_key: this.bybitApiKey,
+          recv_window: "5000",
+          timestamp: timestamp
         }
       });
 
