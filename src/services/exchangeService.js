@@ -127,10 +127,10 @@ class ExchangeService {
 
       const timestamp = Date.now().toString();
       const params = {
-        accountType: "UNIFIED",
-        timestamp: timestamp,
         api_key: this.bybitApiKey,
-        recv_window: "5000"
+        timestamp: timestamp,
+        recv_window: "5000",
+        accountType: "UNIFIED"
       };
 
       const signature = this.signBybit(timestamp, params);
