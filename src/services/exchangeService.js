@@ -129,8 +129,7 @@ class ExchangeService {
 
       const timestamp = Date.now().toString();
       const params = {
-        accountType: "UNIFIED",
-        timestamp: timestamp
+        accountType: "UNIFIED"
       };
 
       const signature = this.signBybit(timestamp, params);
@@ -139,7 +138,8 @@ class ExchangeService {
         url: 'https://api.bybit.com/v5/account/wallet-balance',
         params,
         timestamp,
-        signature
+        signature,
+        apiKey: this.bybitApiKey
       });
 
       const response = await axios.get('https://api.bybit.com/v5/account/wallet-balance', {
@@ -147,9 +147,13 @@ class ExchangeService {
           'X-BAPI-API-KEY': this.bybitApiKey,
           'X-BAPI-SIGN': signature,
           'X-BAPI-TIMESTAMP': timestamp,
-          'X-BAPI-RECV-WINDOW': '5000'
+          'X-BAPI-RECV-WINDOW': '5000',
+          'Content-Type': 'application/json'
         },
-        params: params
+        params: {
+          ...params,
+          timestamp
+        }
       });
 
       console.log('Bybit Response:', response.data);
