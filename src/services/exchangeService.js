@@ -74,10 +74,15 @@ class ExchangeService {
     localStorage.removeItem(STORAGE_KEY);
   }
 
-  signBybit(timestamp) {
-    const queryString = `accountType=FUND&api_key=${this.bybitApiKey}&recv_window=5000&timestamp=${timestamp}`;
-    console.log('Bybit sign string:', queryString);
-    return CryptoJS.HmacSHA256(queryString, this.bybitApiSecret).toString(CryptoJS.enc.Hex);
+  signBybit(params) {
+    // Sort & sign the query string
+    const sortedQueryString = Object.keys(params)
+      .sort()
+      .map(key => `${key}=${params[key]}`)
+      .join('&');
+
+    console.log('Bybit sign string:', sortedQueryString);
+    return CryptoJS.HmacSHA256(sortedQueryString, this.bybitApiSecret).toString(CryptoJS.enc.Hex);
   }
 
   signBinance(queryString) {
@@ -121,11 +126,20 @@ class ExchangeService {
       }
 
       const timestamp = Date.now().toString();
-      const signature = this.signBybit(timestamp);
+
+      // Include all required parameters:
+      const params = {
+        accountType: 'FUND',
+        api_key: this.bybitApiKey,
+        recv_window: '5000',
+        timestamp,
+      };
+
+      const signature = this.signBybit(params);
 
       console.log('Bybit Request:', {
         url: 'https://api.bybit.com/v5/account/wallet-balance',
-        timestamp,
+        params,
         signature
       });
 
@@ -134,14 +148,9 @@ class ExchangeService {
           'X-BAPI-API-KEY': this.bybitApiKey,
           'X-BAPI-SIGN': signature,
           'X-BAPI-TIMESTAMP': timestamp,
-          'X-BAPI-RECV-WINDOW': "5000"
+          'X-BAPI-RECV-WINDOW': '5000'
         },
-        params: {
-          accountType: "FUND",
-          api_key: this.bybitApiKey,
-          recv_window: "5000",
-          timestamp: timestamp
-        }
+        params: params
       });
 
       console.log('Bybit Response:', response.data);
