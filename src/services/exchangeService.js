@@ -1,5 +1,5 @@
 import axios from 'axios';
-import crypto from 'crypto';
+import CryptoJS from 'crypto-js';
 
 class ExchangeService {
   constructor() {
@@ -17,25 +17,19 @@ class ExchangeService {
       .sort()
       .map(key => `${key}=${params[key]}`)
       .join('&');
-    return crypto
-      .createHmac('sha256', this.bybitApiSecret)
-      .update(timestamp + this.bybitApiKey + queryString)
-      .digest('hex');
+    return CryptoJS.HmacSHA256(timestamp + this.bybitApiKey + queryString, this.bybitApiSecret)
+      .toString(CryptoJS.enc.Hex);
   }
 
   signBinance(queryString) {
-    return crypto
-      .createHmac('sha256', this.binanceApiSecret)
-      .update(queryString)
-      .digest('hex');
+    return CryptoJS.HmacSHA256(queryString, this.binanceApiSecret)
+      .toString(CryptoJS.enc.Hex);
   }
 
   signOKX(timestamp, method, path, body = '') {
     const message = timestamp + method + path + body;
-    return crypto
-      .createHmac('sha256', this.okxApiSecret)
-      .update(message)
-      .digest('base64');
+    return CryptoJS.HmacSHA256(message, this.okxApiSecret)
+      .toString(CryptoJS.enc.Base64);
   }
 
   setCredentials(exchange, apiKey, apiSecret, passphrase) {
