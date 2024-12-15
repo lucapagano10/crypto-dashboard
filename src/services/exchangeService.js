@@ -79,7 +79,7 @@ class ExchangeService {
       .sort()
       .map(key => `${key}=${params[key]}`)
       .join('&');
-    return CryptoJS.HmacSHA256(timestamp + this.bybitApiKey + queryString, this.bybitApiSecret)
+    return CryptoJS.HmacSHA256(queryString, this.bybitApiSecret)
       .toString(CryptoJS.enc.Hex);
   }
 
@@ -128,7 +128,15 @@ class ExchangeService {
         accountType: "UNIFIED",
         timestamp
       };
+
       const signature = this.signBybit(timestamp, params);
+
+      console.log('Bybit Request:', {
+        url: 'https://api.bybit.com/v5/account/wallet-balance',
+        params,
+        timestamp,
+        signature
+      });
 
       // Get unified account balances
       const response = await axios.get('https://api.bybit.com/v5/account/wallet-balance', {
