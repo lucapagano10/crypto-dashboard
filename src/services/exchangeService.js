@@ -76,15 +76,21 @@ class ExchangeService {
 
   signBybit(timestamp, params) {
     const recvWindow = '5000';
-    const paramsString = Object.keys(params)
+    const allParams = {
+      ...params,
+      timestamp,
+      api_key: this.bybitApiKey,
+      recv_window: recvWindow
+    };
+
+    const paramsString = Object.keys(allParams)
       .sort()
-      .map(key => `${key}=${params[key]}`)
+      .map(key => `${key}=${allParams[key]}`)
       .join('&');
 
-    const signString = timestamp + this.bybitApiKey + recvWindow + paramsString;
-    console.log('Bybit signature string:', signString);
+    console.log('Bybit signature string:', paramsString);
 
-    return CryptoJS.HmacSHA256(signString, this.bybitApiSecret).toString(CryptoJS.enc.Hex);
+    return CryptoJS.HmacSHA256(paramsString, this.bybitApiSecret).toString(CryptoJS.enc.Hex);
   }
 
   signBinance(queryString) {
@@ -147,12 +153,13 @@ class ExchangeService {
           'X-BAPI-API-KEY': this.bybitApiKey,
           'X-BAPI-SIGN': signature,
           'X-BAPI-TIMESTAMP': timestamp,
-          'X-BAPI-RECV-WINDOW': '5000',
-          'Content-Type': 'application/json'
+          'X-BAPI-RECV-WINDOW': '5000'
         },
         params: {
-          ...params,
-          timestamp
+          accountType: "UNIFIED",
+          timestamp,
+          api_key: this.bybitApiKey,
+          recv_window: '5000'
         }
       });
 
