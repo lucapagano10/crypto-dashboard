@@ -75,15 +75,16 @@ class ExchangeService {
   }
 
   signBybit(timestamp, params) {
-    const queryString = Object.keys(params)
+    const recvWindow = '5000';
+    const paramsString = Object.keys(params)
       .sort()
       .map(key => `${key}=${params[key]}`)
       .join('&');
 
-    console.log('Bybit signature string:', timestamp + this.bybitApiKey + '5000' + queryString);
+    const signString = timestamp + this.bybitApiKey + recvWindow + paramsString;
+    console.log('Bybit signature string:', signString);
 
-    return CryptoJS.HmacSHA256(timestamp + this.bybitApiKey + '5000' + queryString, this.bybitApiSecret)
-      .toString(CryptoJS.enc.Hex);
+    return CryptoJS.HmacSHA256(signString, this.bybitApiSecret).toString(CryptoJS.enc.Hex);
   }
 
   signBinance(queryString) {
@@ -129,7 +130,7 @@ class ExchangeService {
       const timestamp = Date.now().toString();
       const params = {
         accountType: "UNIFIED",
-        timestamp
+        timestamp: timestamp
       };
 
       const signature = this.signBybit(timestamp, params);
@@ -141,7 +142,6 @@ class ExchangeService {
         signature
       });
 
-      // Get unified account balances
       const response = await axios.get('https://api.bybit.com/v5/account/wallet-balance', {
         headers: {
           'X-BAPI-API-KEY': this.bybitApiKey,
@@ -149,7 +149,7 @@ class ExchangeService {
           'X-BAPI-TIMESTAMP': timestamp,
           'X-BAPI-RECV-WINDOW': '5000'
         },
-        params
+        params: params
       });
 
       console.log('Bybit Response:', response.data);
