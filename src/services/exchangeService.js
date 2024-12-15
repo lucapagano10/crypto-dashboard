@@ -75,17 +75,9 @@ class ExchangeService {
   }
 
   signBybit(timestamp, params) {
-    const recvWindow = '5000';
-    const allParams = {
-      ...params,
-      timestamp,
-      api_key: this.bybitApiKey,
-      recv_window: recvWindow
-    };
-
-    const paramsString = Object.keys(allParams)
+    const paramsString = Object.keys(params)
       .sort()
-      .map(key => `${key}=${allParams[key]}`)
+      .map(key => `${key}=${params[key]}`)
       .join('&');
 
     console.log('Bybit signature string:', paramsString);
@@ -135,7 +127,10 @@ class ExchangeService {
 
       const timestamp = Date.now().toString();
       const params = {
-        accountType: "UNIFIED"
+        accountType: "UNIFIED",
+        timestamp: timestamp,
+        api_key: this.bybitApiKey,
+        recv_window: "5000"
       };
 
       const signature = this.signBybit(timestamp, params);
@@ -153,14 +148,9 @@ class ExchangeService {
           'X-BAPI-API-KEY': this.bybitApiKey,
           'X-BAPI-SIGN': signature,
           'X-BAPI-TIMESTAMP': timestamp,
-          'X-BAPI-RECV-WINDOW': '5000'
+          'X-BAPI-RECV-WINDOW': "5000"
         },
-        params: {
-          accountType: "UNIFIED",
-          timestamp,
-          api_key: this.bybitApiKey,
-          recv_window: '5000'
-        }
+        params: params
       });
 
       console.log('Bybit Response:', response.data);
