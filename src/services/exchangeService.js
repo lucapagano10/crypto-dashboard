@@ -207,65 +207,82 @@ class ExchangeService {
         signature
       });
 
-      // Use allorigins as a proxy
-      const proxyUrl = 'https://api.allorigins.win/get?url=';
-      const encodedUrl = encodeURIComponent(
-        `https://api.binance.com/api/v3/account?timestamp=${timestamp}&signature=${signature}&apiKey=${this.binanceApiKey}`
-      );
+      // Use Binance spot API endpoint
+      const response = await axios.get('https://api.binance.com/api/v3/account', {
+        headers: {
+          'X-MBX-APIKEY': this.binanceApiKey
+        },
+        params: {
+          timestamp,
+          signature
+        }
+      });
 
-      const response = await axios.get(`${proxyUrl}${encodedUrl}`);
-
-      // Parse the response from the proxy
-      const binanceData = JSON.parse(response.data.contents);
-      console.log('Binance Response:', binanceData);
+      console.log('Binance Response:', response.data);
 
       const balances = [];
       let totalUSD = 0;
 
-      // Get prices for USD conversion
-      const pricesResponse = await axios.get(`${proxyUrl}${encodeURIComponent('https://api.binance.com/api/v3/ticker/price')}`);
-      const pricesData = JSON.parse(pricesResponse.data.contents);
-      const prices = new Map();
+      // Get spot prices directly from Binance
+      const pricesMap = new Map();
 
-      // Check if pricesData is an array before using forEach
-      if (Array.isArray(pricesData)) {
-        pricesData.forEach((item) => {
-          if (item && item.symbol && item.price) {
-            prices.set(item.symbol, Number(item.price));
-          }
+      if (response.data.balances) {
+        // First, collect all non-zero balances and their symbols
+        const nonZeroBalances = response.data.balances.filter(balance => {
+          const free = Number(balance.free) || 0;
+          const locked = Number(balance.locked) || 0;
+          return free + locked > 0;
         });
-      } else {
-        console.warn('Unexpected price data format:', pricesData);
-      }
 
-      if (binanceData.balances) {
-        for (const balance of binanceData.balances) {
+        // Get prices for all needed symbols in one batch
+        if (nonZeroBalances.length > 0) {
+          const symbols = nonZeroBalances
+            .filter(b => b.asset !== 'USDT' && b.asset !== 'BUSD' && b.asset !== 'USD')
+            .map(b => `${b.asset}USDT`);
+
+          if (symbols.length > 0) {
+            try {
+              const pricesResponse = await axios.get('https://api.binance.com/api/v3/ticker/price', {
+                params: {
+                  symbols: JSON.stringify(symbols)
+                }
+              });
+
+              pricesResponse.data.forEach(item => {
+                pricesMap.set(item.symbol, Number(item.price));
+              });
+            } catch (priceError) {
+              console.warn('Error fetching prices:', priceError.message);
+            }
+          }
+        }
+
+        // Process balances
+        for (const balance of nonZeroBalances) {
           const free = Number(balance.free) || 0;
           const locked = Number(balance.locked) || 0;
           const total = free + locked;
 
-          if (total > 0) {
-            balances.push({
-              asset: balance.asset,
-              free,
-              locked,
-              total
-            });
+          balances.push({
+            asset: balance.asset,
+            free,
+            locked,
+            total
+          });
 
-            // Calculate USD value
-            let usdValue = 0;
-            if (balance.asset === 'USDT' || balance.asset === 'BUSD' || balance.asset === 'USD') {
-              usdValue = total;
-            } else {
-              const symbol = `${balance.asset}USDT`;
-              const price = prices.get(symbol) || 0;
-              usdValue = total * price;
-              console.log(`Price for ${symbol}: ${price}`);
-            }
-
-            totalUSD += usdValue;
-            console.log(`Adding ${balance.asset} balance: ${total}, USD value: ${usdValue}`);
+          // Calculate USD value
+          let usdValue = 0;
+          if (balance.asset === 'USDT' || balance.asset === 'BUSD' || balance.asset === 'USD') {
+            usdValue = total;
+          } else {
+            const symbol = `${balance.asset}USDT`;
+            const price = pricesMap.get(symbol) || 0;
+            usdValue = total * price;
+            console.log(`Price for ${symbol}: ${price}`);
           }
+
+          totalUSD += usdValue;
+          console.log(`Adding ${balance.asset} balance: ${total}, USD value: ${usdValue}`);
         }
       }
 
