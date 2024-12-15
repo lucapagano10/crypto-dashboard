@@ -124,11 +124,14 @@ class ExchangeService {
       }
 
       const timestamp = Date.now().toString();
-      const params = { timestamp };
+      const params = {
+        accountType: "UNIFIED",
+        timestamp
+      };
       const signature = this.signBybit(timestamp, params);
 
-      // Get spot account balances
-      const response = await axios.get('https://api.bybit.com/v5/spot/wallet-balance', {
+      // Get unified account balances
+      const response = await axios.get('https://api.bybit.com/v5/account/wallet-balance', {
         headers: {
           'X-BAPI-API-KEY': this.bybitApiKey,
           'X-BAPI-SIGN': signature,
@@ -143,44 +146,28 @@ class ExchangeService {
       const balances = [];
       let totalUSD = 0;
 
-      if (response.data.result && response.data.result.balances) {
-        for (const balance of response.data.result.balances) {
-          const total = Number(balance.total) || 0;
-          const free = Number(balance.free) || 0;
-          const locked = Number(balance.locked) || 0;
+      if (response.data.result && response.data.result.list) {
+        for (const account of response.data.result.list) {
+          if (account.coin) {
+            for (const coin of account.coin) {
+              const walletBalance = Number(coin.walletBalance) || 0;
 
-          if (total > 0) {
-            // For USDT and USD, use the balance as the USD value
-            let usdValue = 0;
-            if (balance.coin === 'USDT' || balance.coin === 'USD') {
-              usdValue = total;
-            } else {
-              // Get the ticker price for non-stablecoin assets
-              try {
-                const tickerResponse = await axios.get(`https://api.bybit.com/v5/market/tickers`, {
-                  params: {
-                    category: 'spot',
-                    symbol: `${balance.coin}USDT`
-                  }
+              if (walletBalance > 0) {
+                const usdValue = Number(coin.usdValue) || 0;
+                const free = Number(coin.free) || walletBalance;
+                const locked = walletBalance - free;
+
+                balances.push({
+                  asset: coin.coin,
+                  free,
+                  locked,
+                  total: walletBalance
                 });
-                if (tickerResponse.data.result.list && tickerResponse.data.result.list[0]) {
-                  const price = Number(tickerResponse.data.result.list[0].lastPrice) || 0;
-                  usdValue = total * price;
-                }
-              } catch (error) {
-                console.warn(`Failed to get price for ${balance.coin}:`, error);
+
+                totalUSD += usdValue;
+                console.log(`Adding ${coin.coin} balance: ${walletBalance}, USD value: ${usdValue}`);
               }
             }
-
-            balances.push({
-              asset: balance.coin,
-              free,
-              locked,
-              total
-            });
-
-            totalUSD += usdValue;
-            console.log(`Adding ${balance.coin} balance: ${total}, USD value: ${usdValue}`);
           }
         }
       }
