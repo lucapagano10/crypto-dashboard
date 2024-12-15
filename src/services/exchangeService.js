@@ -207,10 +207,12 @@ class ExchangeService {
         signature
       });
 
-      // First, get the funding wallet balance
-      const response = await axios.get('https://api.binance.com/sapi/v1/asset/wallet/balance', {
+      // Use cors-anywhere proxy
+      const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+      const response = await axios.get(`${proxyUrl}https://api.binance.com/sapi/v1/asset/wallet/balance`, {
         headers: {
-          'X-MBX-APIKEY': this.binanceApiKey
+          'X-MBX-APIKEY': this.binanceApiKey,
+          'Origin': 'https://lucapagano10.github.io'
         },
         params: {
           timestamp,
@@ -241,9 +243,13 @@ class ExchangeService {
             if (balance.asset === 'USDT' || balance.asset === 'BUSD' || balance.asset === 'USD') {
               totalUSD += total;
             } else {
-              // Get the current price for non-stablecoins
+              // Get the current price for non-stablecoins using the proxy
               try {
-                const priceResponse = await axios.get(`https://api.binance.com/api/v3/ticker/price?symbol=${balance.asset}USDT`);
+                const priceResponse = await axios.get(`${proxyUrl}https://api.binance.com/api/v3/ticker/price?symbol=${balance.asset}USDT`, {
+                  headers: {
+                    'Origin': 'https://lucapagano10.github.io'
+                  }
+                });
                 const price = Number(priceResponse.data.price) || 0;
                 const usdValue = total * price;
                 totalUSD += usdValue;
