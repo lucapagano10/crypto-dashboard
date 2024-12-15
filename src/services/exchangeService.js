@@ -124,20 +124,18 @@ class ExchangeService {
       }
 
       const timestamp = Date.now().toString();
-      const params = {
-        timestamp,
-        accountType: "SPOT"  // Specify SPOT account type
-      };
+      const params = { timestamp };
       const signature = this.signBybit(timestamp, params);
 
-      // First get the wallet balance
-      const response = await axios.get('https://api.bybit.com/v5/account/wallet-balance', {
+      // Get spot account balances
+      const response = await axios.get('https://api.bybit.com/v5/spot/wallet-balance', {
         headers: {
           'X-BAPI-API-KEY': this.bybitApiKey,
           'X-BAPI-SIGN': signature,
           'X-BAPI-TIMESTAMP': timestamp,
+          'X-BAPI-RECV-WINDOW': '5000'
         },
-        params,
+        params
       });
 
       console.log('Bybit Response:', response.data);
@@ -145,36 +143,39 @@ class ExchangeService {
       const balances = [];
       let totalUSD = 0;
 
-      // Get spot account balances
-      const spotResponse = await axios.get('https://api.bybit.com/v5/asset/transfer/query-account-coins-balance', {
-        headers: {
-          'X-BAPI-API-KEY': this.bybitApiKey,
-          'X-BAPI-SIGN': signature,
-          'X-BAPI-TIMESTAMP': timestamp,
-        },
-        params: {
-          ...params,
-          accountType: "SPOT"
-        }
-      });
-
-      console.log('Bybit Spot Response:', spotResponse.data);
-
-      if (spotResponse.data.result && spotResponse.data.result.balance) {
-        for (const balance of spotResponse.data.result.balance) {
-          const total = Number(balance.walletBalance) || 0;
-          const free = Number(balance.transferBalance) || 0;
+      if (response.data.result && response.data.result.balances) {
+        for (const balance of response.data.result.balances) {
+          const total = Number(balance.total) || 0;
+          const free = Number(balance.free) || 0;
+          const locked = Number(balance.locked) || 0;
 
           if (total > 0) {
             // For USDT and USD, use the balance as the USD value
-            const usdValue = balance.coin === 'USDT' || balance.coin === 'USD'
-              ? total
-              : Number(balance.transferBalanceInUsd) || 0;
+            let usdValue = 0;
+            if (balance.coin === 'USDT' || balance.coin === 'USD') {
+              usdValue = total;
+            } else {
+              // Get the ticker price for non-stablecoin assets
+              try {
+                const tickerResponse = await axios.get(`https://api.bybit.com/v5/market/tickers`, {
+                  params: {
+                    category: 'spot',
+                    symbol: `${balance.coin}USDT`
+                  }
+                });
+                if (tickerResponse.data.result.list && tickerResponse.data.result.list[0]) {
+                  const price = Number(tickerResponse.data.result.list[0].lastPrice) || 0;
+                  usdValue = total * price;
+                }
+              } catch (error) {
+                console.warn(`Failed to get price for ${balance.coin}:`, error);
+              }
+            }
 
             balances.push({
               asset: balance.coin,
               free,
-              locked: total - free,
+              locked,
               total
             });
 
