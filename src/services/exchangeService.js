@@ -75,17 +75,13 @@ class ExchangeService {
   }
 
   signBybit(timestamp, params) {
-    const { api_key, ...queryParams } = params;
-
-    const paramsString = Object.keys(queryParams)
+    const paramsString = Object.keys(params)
       .sort()
-      .map(key => `${key}=${queryParams[key]}`)
+      .map(key => `${key}=${params[key]}`)
       .join('&');
 
-    const signString = timestamp + this.bybitApiKey + "5000" + paramsString;
-    console.log('Bybit signature string:', signString);
-
-    return CryptoJS.HmacSHA256(signString, this.bybitApiSecret).toString(CryptoJS.enc.Hex);
+    console.log('Params string:', paramsString);
+    return CryptoJS.HmacSHA256(paramsString, this.bybitApiSecret).toString(CryptoJS.enc.Hex);
   }
 
   signBinance(queryString) {
@@ -130,8 +126,10 @@ class ExchangeService {
 
       const timestamp = Date.now().toString();
       const params = {
-        accountType: "FUND",
-        timestamp: timestamp
+        api_key: this.bybitApiKey,
+        timestamp: timestamp,
+        recv_window: "5000",
+        accountType: "FUND"
       };
 
       const signature = this.signBybit(timestamp, params);
@@ -140,8 +138,7 @@ class ExchangeService {
         url: 'https://api.bybit.com/v5/account/wallet-balance',
         params,
         timestamp,
-        signature,
-        apiKey: this.bybitApiKey
+        signature
       });
 
       const response = await axios.get('https://api.bybit.com/v5/account/wallet-balance', {
@@ -151,7 +148,9 @@ class ExchangeService {
           'X-BAPI-TIMESTAMP': timestamp,
           'X-BAPI-RECV-WINDOW': "5000"
         },
-        params: params
+        params: {
+          accountType: "FUND"
+        }
       });
 
       console.log('Bybit Response:', response.data);
