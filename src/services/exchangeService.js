@@ -210,19 +210,27 @@ class ExchangeService {
         for (const balance of response.data.data) {
           const cashBal = Number(balance.bal) || 0;
           const availBal = Number(balance.availBal) || 0;
-          const usdValue = Number(balance.usdValue) || 0;
 
           if (cashBal > 0) {
+            // For USDT and USD, use the balance as the USD value
+            const usdValue = balance.ccy === 'USDT' || balance.ccy === 'USD'
+              ? cashBal
+              : Number(balance.usdValue) || 0;
+
             balances.push({
               asset: balance.ccy,
               free: availBal,
               locked: cashBal - availBal,
               total: cashBal
             });
+
             totalUSD += usdValue;
+            console.log(`Adding ${balance.ccy} balance: ${cashBal}, USD value: ${usdValue}`);
           }
         }
       }
+
+      console.log('Total USD Value:', totalUSD);
 
       return {
         exchange: 'OKX',
