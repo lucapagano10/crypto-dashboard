@@ -7,15 +7,12 @@ class ExchangeService {
   constructor() {
     this.bybitApiKey = '';
     this.bybitApiSecret = '';
-    this.binanceApiKey = '';
-    this.binanceApiSecret = '';
     this.okxApiKey = '';
     this.okxApiSecret = '';
     this.okxPassphrase = '';
     this.loadCredentials();
   }
 
-  // Load credentials from localStorage
   loadCredentials() {
     try {
       const encryptedData = localStorage.getItem(STORAGE_KEY);
@@ -25,27 +22,21 @@ class ExchangeService {
 
         this.bybitApiKey = credentials.bybitApiKey || '';
         this.bybitApiSecret = credentials.bybitApiSecret || '';
-        this.binanceApiKey = credentials.binanceApiKey || '';
-        this.binanceApiSecret = credentials.binanceApiSecret || '';
         this.okxApiKey = credentials.okxApiKey || '';
         this.okxApiSecret = credentials.okxApiSecret || '';
         this.okxPassphrase = credentials.okxPassphrase || '';
       }
     } catch (error) {
       console.warn('Failed to load credentials from localStorage:', error);
-      // If there's an error loading credentials, clear them
       this.clearCredentials();
     }
   }
 
-  // Save credentials to localStorage
   saveCredentials() {
     try {
       const credentials = {
         bybitApiKey: this.bybitApiKey,
         bybitApiSecret: this.bybitApiSecret,
-        binanceApiKey: this.binanceApiKey,
-        binanceApiSecret: this.binanceApiSecret,
         okxApiKey: this.okxApiKey,
         okxApiSecret: this.okxApiSecret,
         okxPassphrase: this.okxPassphrase
@@ -62,12 +53,9 @@ class ExchangeService {
     }
   }
 
-  // Clear credentials from localStorage
   clearCredentials() {
     this.bybitApiKey = '';
     this.bybitApiSecret = '';
-    this.binanceApiKey = '';
-    this.binanceApiSecret = '';
     this.okxApiKey = '';
     this.okxApiSecret = '';
     this.okxPassphrase = '';
@@ -78,11 +66,6 @@ class ExchangeService {
     const queryString = timestamp + this.bybitApiKey + '5000' + params;
     console.log('Bybit sign string:', queryString);
     return CryptoJS.HmacSHA256(queryString, this.bybitApiSecret).toString(CryptoJS.enc.Hex);
-  }
-
-  signBinance(queryString) {
-    return CryptoJS.HmacSHA256(queryString, this.binanceApiSecret)
-      .toString(CryptoJS.enc.Hex);
   }
 
   signOKX(timestamp, method, path, body = '') {
@@ -97,10 +80,6 @@ class ExchangeService {
         this.bybitApiKey = apiKey;
         this.bybitApiSecret = apiSecret;
         break;
-      case 'binance':
-        this.binanceApiKey = apiKey;
-        this.binanceApiSecret = apiSecret;
-        break;
       case 'okx':
         this.okxApiKey = apiKey;
         this.okxApiSecret = apiSecret;
@@ -110,7 +89,6 @@ class ExchangeService {
         console.warn('Unknown exchange:', exchange);
         return;
     }
-    // Save credentials after setting them
     this.saveCredentials();
   }
 
@@ -163,7 +141,6 @@ class ExchangeService {
               total: walletBalance
             });
 
-            // For USDT and USD, use the balance as the USD value
             const usdValue = coin.coin === 'USDT' || coin.coin === 'USD'
               ? walletBalance
               : Number(coin.transferBalance) * (coin.price || 1);
@@ -185,99 +162,6 @@ class ExchangeService {
       console.error('Error fetching Bybit balance:', error);
       return {
         exchange: 'Bybit',
-        balances: [],
-        totalUSD: 0,
-        error: error.message
-      };
-    }
-  }
-
-  async getBinanceBalance() {
-    try {
-      if (!this.binanceApiKey || !this.binanceApiSecret) {
-        throw new Error('Binance API credentials not set');
-      }
-
-      const timestamp = Date.now().toString();
-      const queryString = `recvWindow=5000&timestamp=${timestamp}`;
-      const signature = this.signBinance(queryString);
-
-      console.log('Binance Request Details:', {
-        timestamp,
-        signature
-      });
-
-      // Use the funding wallet endpoint
-      const response = await axios({
-        method: 'GET',
-        url: 'https://api.binance.com/sapi/v1/asset/wallet/balance',
-        headers: {
-          'X-MBX-APIKEY': this.binanceApiKey,
-          'Content-Type': 'application/json'
-        },
-        params: {
-          recvWindow: '5000',
-          timestamp: timestamp,
-          signature: signature
-        }
-      });
-
-      console.log('Binance Response:', response.data);
-
-      const balances = [];
-      let totalUSD = 0;
-
-      if (Array.isArray(response.data)) {
-        for (const asset of response.data) {
-          const free = Number(asset.free) || 0;
-          const locked = Number(asset.locked) || 0;
-          const total = free + locked;
-
-          if (total > 0) {
-            balances.push({
-              asset: asset.asset,
-              free,
-              locked,
-              total
-            });
-
-            // For stablecoins, use the balance directly
-            if (asset.asset === 'USDT' || asset.asset === 'BUSD' || asset.asset === 'USD') {
-              totalUSD += total;
-            } else {
-              // For other assets, get the current price
-              try {
-                const priceResponse = await axios({
-                  method: 'GET',
-                  url: `https://api.binance.com/api/v3/ticker/price`,
-                  params: {
-                    symbol: `${asset.asset}USDT`
-                  }
-                });
-
-                const price = Number(priceResponse.data.price) || 0;
-                const usdValue = total * price;
-                totalUSD += usdValue;
-                console.log(`Price for ${asset.asset}USDT: ${price}, USD value: ${usdValue}`);
-              } catch (priceError) {
-                console.warn(`Could not get price for ${asset.asset}:`, priceError.message);
-              }
-            }
-          }
-        }
-      }
-
-      console.log('Binance Total USD Value:', totalUSD);
-
-      return {
-        exchange: 'Binance',
-        balances,
-        totalUSD
-      };
-    } catch (error) {
-      console.error('Error fetching Binance balance:', error);
-      return {
-        exchange: 'Binance',
         balances: [],
         totalUSD: 0,
         error: error.message
@@ -316,7 +200,6 @@ class ExchangeService {
           const availBal = Number(balance.availBal) || 0;
 
           if (cashBal > 0) {
-            // For USDT and USD, use the balance as the USD value
             const usdValue = balance.ccy === 'USDT' || balance.ccy === 'USD'
               ? cashBal
               : Number(balance.usdValue) || 0;
@@ -355,7 +238,6 @@ class ExchangeService {
   async getAllBalances() {
     const results = await Promise.all([
       this.getBybitBalance(),
-      this.getBinanceBalance(),
       this.getOKXBalance()
     ]);
 
