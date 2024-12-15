@@ -202,7 +202,12 @@ class ExchangeService {
       const queryString = `timestamp=${timestamp}`;
       const signature = this.signBinance(queryString);
 
-      const response = await axios.get('https://api.binance.com/api/v3/account', {
+      console.log('Binance Request Details:', {
+        timestamp,
+        signature
+      });
+
+      const response = await axios.get('https://api.binance.com/sapi/v1/capital/config/getall', {
         headers: {
           'X-MBX-APIKEY': this.binanceApiKey,
         },
@@ -212,42 +217,37 @@ class ExchangeService {
         },
       });
 
+      console.log('Binance Response:', response.data);
+
       const balances = [];
       let totalUSD = 0;
 
-      // Get prices for USD conversion
-      const pricesResponse = await axios.get('https://api.binance.com/api/v3/ticker/price');
-      const prices = new Map();
-      pricesResponse.data.forEach((item) => {
-        prices.set(item.symbol, Number(item.price));
-      });
-
-      if (response.data.balances) {
-        for (const balance of response.data.balances) {
-          const free = Number(balance.free) || 0;
-          const locked = Number(balance.locked) || 0;
+      if (response.data) {
+        for (const asset of response.data) {
+          const free = Number(asset.free) || 0;
+          const locked = Number(asset.locked) || 0;
           const total = free + locked;
 
           if (total > 0) {
-            let usdValue = 0;
-            if (balance.asset === 'USDT' || balance.asset === 'BUSD' || balance.asset === 'USD') {
-              usdValue = total;
-            } else {
-              const symbol = `${balance.asset}USDT`;
-              const price = prices.get(symbol) || 0;
-              usdValue = Number(total) * Number(price);
-            }
-
             balances.push({
-              asset: balance.asset,
+              asset: asset.coin,
               free,
               locked,
               total
             });
+
+            // For stable coins, use the balance directly
+            const usdValue = ['USDT', 'BUSD', 'USD'].includes(asset.coin)
+              ? total
+              : total * (Number(asset.usdtPrice) || 0);
+
             totalUSD += usdValue;
+            console.log(`Adding ${asset.coin} balance: ${total}, USD value: ${usdValue}`);
           }
         }
       }
+
+      console.log('Binance Total USD Value:', totalUSD);
 
       return {
         exchange: 'Binance',
