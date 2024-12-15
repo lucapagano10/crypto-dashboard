@@ -224,10 +224,19 @@ class ExchangeService {
 
       // Get prices for USD conversion
       const pricesResponse = await axios.get(`${proxyUrl}${encodeURIComponent('https://api.binance.com/api/v3/ticker/price')}`);
+      const pricesData = JSON.parse(pricesResponse.data.contents);
       const prices = new Map();
-      JSON.parse(pricesResponse.data.contents).forEach((item) => {
-        prices.set(item.symbol, Number(item.price));
-      });
+
+      // Check if pricesData is an array before using forEach
+      if (Array.isArray(pricesData)) {
+        pricesData.forEach((item) => {
+          if (item && item.symbol && item.price) {
+            prices.set(item.symbol, Number(item.price));
+          }
+        });
+      } else {
+        console.warn('Unexpected price data format:', pricesData);
+      }
 
       if (binanceData.balances) {
         for (const balance of binanceData.balances) {
@@ -251,6 +260,7 @@ class ExchangeService {
               const symbol = `${balance.asset}USDT`;
               const price = prices.get(symbol) || 0;
               usdValue = total * price;
+              console.log(`Price for ${symbol}: ${price}`);
             }
 
             totalUSD += usdValue;
