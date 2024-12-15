@@ -121,7 +121,8 @@ class ExchangeService {
       }
 
       const timestamp = Date.now().toString();
-      const queryParams = 'accountType=UNIFIED';
+      const path = '/asset/v3/private/transfer/account-coins/balance/query';
+      const queryParams = 'accountType=FUND';
       const signature = this.signBybit(timestamp, queryParams);
 
       console.log('Bybit Request Details:', {
@@ -131,7 +132,7 @@ class ExchangeService {
         queryParams
       });
 
-      const response = await axios.get('https://api.bybit.com/v5/account/wallet-balance', {
+      const response = await axios.get(`https://api.bybit.com${path}`, {
         headers: {
           'X-BAPI-API-KEY': this.bybitApiKey,
           'X-BAPI-SIGN': signature,
@@ -139,7 +140,7 @@ class ExchangeService {
           'X-BAPI-RECV-WINDOW': '5000'
         },
         params: {
-          accountType: 'UNIFIED'
+          accountType: 'FUND'
         }
       });
 
@@ -148,28 +149,27 @@ class ExchangeService {
       const balances = [];
       let totalUSD = 0;
 
-      if (response.data.result && response.data.result.list) {
-        for (const account of response.data.result.list) {
-          if (account.coin) {
-            for (const coin of account.coin) {
-              const walletBalance = Number(coin.walletBalance) || 0;
+      if (response.data.result && response.data.result.balance) {
+        for (const coin of response.data.result.balance) {
+          const walletBalance = Number(coin.walletBalance) || 0;
+          const free = Number(coin.transferBalance) || walletBalance;
+          const locked = walletBalance - free;
 
-              if (walletBalance > 0) {
-                const usdValue = Number(coin.usdValue) || 0;
-                const free = Number(coin.free) || walletBalance;
-                const locked = walletBalance - free;
+          if (walletBalance > 0) {
+            balances.push({
+              asset: coin.coin,
+              free,
+              locked,
+              total: walletBalance
+            });
 
-                balances.push({
-                  asset: coin.coin,
-                  free,
-                  locked,
-                  total: walletBalance
-                });
+            // For USDT and USD, use the balance as the USD value
+            const usdValue = coin.coin === 'USDT' || coin.coin === 'USD'
+              ? walletBalance
+              : Number(coin.transferBalance) * (coin.price || 1);
 
-                totalUSD += usdValue;
-                console.log(`Adding ${coin.coin} balance: ${walletBalance}, USD value: ${usdValue}`);
-              }
-            }
+            totalUSD += usdValue;
+            console.log(`Adding ${coin.coin} balance: ${walletBalance}, USD value: ${usdValue}`);
           }
         }
       }
