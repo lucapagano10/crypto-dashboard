@@ -198,8 +198,8 @@ class ExchangeService {
         throw new Error('Binance API credentials not set');
       }
 
-      const timestamp = Date.now();
-      const queryString = `timestamp=${timestamp}`;
+      const timestamp = Date.now().toString();
+      const queryString = `recvWindow=5000&timestamp=${timestamp}`;
       const signature = this.signBinance(queryString);
 
       console.log('Binance Request Details:', {
@@ -207,14 +207,18 @@ class ExchangeService {
         signature
       });
 
-      // Use Binance spot API endpoint
-      const response = await axios.get('https://api.binance.com/api/v3/account', {
+      // Use the funding wallet endpoint
+      const response = await axios({
+        method: 'GET',
+        url: 'https://api.binance.com/sapi/v1/asset/wallet/balance',
         headers: {
-          'X-MBX-APIKEY': this.binanceApiKey
+          'X-MBX-APIKEY': this.binanceApiKey,
+          'Content-Type': 'application/json'
         },
         params: {
-          timestamp,
-          signature
+          recvWindow: '5000',
+          timestamp: timestamp,
+          signature: signature
         }
       });
 
@@ -223,66 +227,43 @@ class ExchangeService {
       const balances = [];
       let totalUSD = 0;
 
-      // Get spot prices directly from Binance
-      const pricesMap = new Map();
-
-      if (response.data.balances) {
-        // First, collect all non-zero balances and their symbols
-        const nonZeroBalances = response.data.balances.filter(balance => {
-          const free = Number(balance.free) || 0;
-          const locked = Number(balance.locked) || 0;
-          return free + locked > 0;
-        });
-
-        // Get prices for all needed symbols in one batch
-        if (nonZeroBalances.length > 0) {
-          const symbols = nonZeroBalances
-            .filter(b => b.asset !== 'USDT' && b.asset !== 'BUSD' && b.asset !== 'USD')
-            .map(b => `${b.asset}USDT`);
-
-          if (symbols.length > 0) {
-            try {
-              const pricesResponse = await axios.get('https://api.binance.com/api/v3/ticker/price', {
-                params: {
-                  symbols: JSON.stringify(symbols)
-                }
-              });
-
-              pricesResponse.data.forEach(item => {
-                pricesMap.set(item.symbol, Number(item.price));
-              });
-            } catch (priceError) {
-              console.warn('Error fetching prices:', priceError.message);
-            }
-          }
-        }
-
-        // Process balances
-        for (const balance of nonZeroBalances) {
-          const free = Number(balance.free) || 0;
-          const locked = Number(balance.locked) || 0;
+      if (Array.isArray(response.data)) {
+        for (const asset of response.data) {
+          const free = Number(asset.free) || 0;
+          const locked = Number(asset.locked) || 0;
           const total = free + locked;
 
-          balances.push({
-            asset: balance.asset,
-            free,
-            locked,
-            total
-          });
+          if (total > 0) {
+            balances.push({
+              asset: asset.asset,
+              free,
+              locked,
+              total
+            });
 
-          // Calculate USD value
-          let usdValue = 0;
-          if (balance.asset === 'USDT' || balance.asset === 'BUSD' || balance.asset === 'USD') {
-            usdValue = total;
-          } else {
-            const symbol = `${balance.asset}USDT`;
-            const price = pricesMap.get(symbol) || 0;
-            usdValue = total * price;
-            console.log(`Price for ${symbol}: ${price}`);
+            // For stablecoins, use the balance directly
+            if (asset.asset === 'USDT' || asset.asset === 'BUSD' || asset.asset === 'USD') {
+              totalUSD += total;
+            } else {
+              // For other assets, get the current price
+              try {
+                const priceResponse = await axios({
+                  method: 'GET',
+                  url: `https://api.binance.com/api/v3/ticker/price`,
+                  params: {
+                    symbol: `${asset.asset}USDT`
+                  }
+                });
+
+                const price = Number(priceResponse.data.price) || 0;
+                const usdValue = total * price;
+                totalUSD += usdValue;
+                console.log(`Price for ${asset.asset}USDT: ${price}, USD value: ${usdValue}`);
+              } catch (priceError) {
+                console.warn(`Could not get price for ${asset.asset}:`, priceError.message);
+              }
+            }
           }
-
-          totalUSD += usdValue;
-          console.log(`Adding ${balance.asset} balance: ${total}, USD value: ${usdValue}`);
         }
       }
 
