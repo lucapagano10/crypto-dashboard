@@ -32,6 +32,8 @@ import {
   Tr,
   Th,
   Td,
+  IconButton,
+  Tooltip,
 } from '@chakra-ui/react';
 import { exchangeService } from '../services/exchangeService';
 
@@ -89,6 +91,18 @@ export const Dashboard = () => {
     onClose();
   };
 
+  const handleClearCredentials = () => {
+    exchangeService.clearCredentials();
+    setBalances([]);
+    toast({
+      title: 'Credentials cleared',
+      description: 'All API credentials have been removed',
+      status: 'info',
+      duration: 3000,
+      isClosable: true,
+    });
+  };
+
   const getTotalBalance = () => {
     return balances.reduce((sum, exchange) => sum + exchange.totalUSD, 0);
   };
@@ -98,13 +112,24 @@ export const Dashboard = () => {
       <VStack spacing={8} align="stretch">
         <HStack justify="space-between">
           <Heading size="lg">Crypto Exchange Dashboard</Heading>
-          <Button
-            colorScheme="blue"
-            onClick={fetchBalances}
-            isLoading={isLoading}
-          >
-            Refresh Balances
-          </Button>
+          <HStack>
+            <Button
+              colorScheme="blue"
+              onClick={fetchBalances}
+              isLoading={isLoading}
+            >
+              Refresh Balances
+            </Button>
+            <Tooltip label="Clear all API credentials">
+              <Button
+                colorScheme="red"
+                variant="outline"
+                onClick={handleClearCredentials}
+              >
+                Clear All Credentials
+              </Button>
+            </Tooltip>
+          </HStack>
         </HStack>
 
         <Card>

@@ -1,6 +1,8 @@
 import axios from 'axios';
 import CryptoJS from 'crypto-js';
 
+const STORAGE_KEY = 'crypto_dashboard_credentials';
+
 class ExchangeService {
   constructor() {
     this.bybitApiKey = '';
@@ -10,6 +12,66 @@ class ExchangeService {
     this.okxApiKey = '';
     this.okxApiSecret = '';
     this.okxPassphrase = '';
+    this.loadCredentials();
+  }
+
+  // Load credentials from localStorage
+  loadCredentials() {
+    try {
+      const encryptedData = localStorage.getItem(STORAGE_KEY);
+      if (encryptedData) {
+        const decrypted = CryptoJS.AES.decrypt(encryptedData, window.location.hostname);
+        const credentials = JSON.parse(decrypted.toString(CryptoJS.enc.Utf8));
+
+        this.bybitApiKey = credentials.bybitApiKey || '';
+        this.bybitApiSecret = credentials.bybitApiSecret || '';
+        this.binanceApiKey = credentials.binanceApiKey || '';
+        this.binanceApiSecret = credentials.binanceApiSecret || '';
+        this.okxApiKey = credentials.okxApiKey || '';
+        this.okxApiSecret = credentials.okxApiSecret || '';
+        this.okxPassphrase = credentials.okxPassphrase || '';
+      }
+    } catch (error) {
+      console.warn('Failed to load credentials from localStorage:', error);
+      // If there's an error loading credentials, clear them
+      this.clearCredentials();
+    }
+  }
+
+  // Save credentials to localStorage
+  saveCredentials() {
+    try {
+      const credentials = {
+        bybitApiKey: this.bybitApiKey,
+        bybitApiSecret: this.bybitApiSecret,
+        binanceApiKey: this.binanceApiKey,
+        binanceApiSecret: this.binanceApiSecret,
+        okxApiKey: this.okxApiKey,
+        okxApiSecret: this.okxApiSecret,
+        okxPassphrase: this.okxPassphrase
+      };
+
+      const encrypted = CryptoJS.AES.encrypt(
+        JSON.stringify(credentials),
+        window.location.hostname
+      ).toString();
+
+      localStorage.setItem(STORAGE_KEY, encrypted);
+    } catch (error) {
+      console.error('Failed to save credentials:', error);
+    }
+  }
+
+  // Clear credentials from localStorage
+  clearCredentials() {
+    this.bybitApiKey = '';
+    this.bybitApiSecret = '';
+    this.binanceApiKey = '';
+    this.binanceApiSecret = '';
+    this.okxApiKey = '';
+    this.okxApiSecret = '';
+    this.okxPassphrase = '';
+    localStorage.removeItem(STORAGE_KEY);
   }
 
   signBybit(timestamp, params) {
@@ -49,7 +111,10 @@ class ExchangeService {
         break;
       default:
         console.warn('Unknown exchange:', exchange);
+        return;
     }
+    // Save credentials after setting them
+    this.saveCredentials();
   }
 
   async getBybitBalance() {
