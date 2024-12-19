@@ -49,6 +49,42 @@ export const Dashboard = () => {
   const [passphrase, setPassphrase] = useState('');
   const [selectedAccountIndex, setSelectedAccountIndex] = useState(0);
 
+  const renderExchangeContent = (exchangeName) => {
+    const exchangeData = balances.find((b) => b.exchange === exchangeName);
+    return (
+      <>
+        <Text>
+          Balance: ${exchangeData?.totalUSD.toLocaleString() || '0'}
+        </Text>
+        {exchangeData?.error && (
+          <Text color="red.500" fontSize="sm">
+            Error: {exchangeData.error}
+          </Text>
+        )}
+        {exchangeData?.balances && exchangeData.balances.length > 0 && (
+          <TableContainer>
+            <Table size="sm" variant="simple">
+              <Thead>
+                <Tr>
+                  <Th>Asset</Th>
+                  <Th isNumeric>Total</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {exchangeData.balances.map((balance) => (
+                  <Tr key={balance.asset}>
+                    <Td>{balance.asset}</Td>
+                    <Td isNumeric>{balance.total.toFixed(8)}</Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </TableContainer>
+        )}
+      </>
+    );
+  };
+
   const fetchBalances = async () => {
     try {
       setIsLoading(true);
@@ -183,89 +219,53 @@ export const Dashboard = () => {
           </Card>
         </SimpleGrid>
 
-        {function renderExchangeContent(exchangeName) {
-          const exchangeData = balances.find((b) => b.exchange === exchangeName);
-          return (
-            <>
-              <Text>
-                Balance: ${exchangeData?.totalUSD.toLocaleString() || '0'}
-              </Text>
-              {exchangeData?.error && (
-                <Text color="red.500" fontSize="sm">
-                  Error: {exchangeData.error}
-                </Text>
-              )}
-              {exchangeData?.balances && exchangeData.balances.length > 0 && (
-                <TableContainer>
-                  <Table size="sm" variant="simple">
-                    <Thead>
-                      <Tr>
-                        <Th>Asset</Th>
-                        <Th isNumeric>Total</Th>
-                      </Tr>
-                    </Thead>
-                    <Tbody>
-                      {exchangeData.balances.map((balance) => (
-                        <Tr key={balance.asset}>
-                          <Td>{balance.asset}</Td>
-                          <Td isNumeric>{balance.total.toFixed(8)}</Td>
-                        </Tr>
-                      ))}
-                    </Tbody>
-                  </Table>
-                </TableContainer>
-              )}
-            </>
-          );
-        }}
-      </VStack>
-
-      <Modal isOpen={isOpen} onClose={onClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Set {selectedExchange} API Credentials</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>
-            <VStack spacing={4}>
-              <FormControl>
-                <FormLabel>API Key</FormLabel>
-                <Input
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="Enter API Key"
-                />
-              </FormControl>
-              <FormControl>
-                <FormLabel>API Secret</FormLabel>
-                <Input
-                  value={apiSecret}
-                  onChange={(e) => setApiSecret(e.target.value)}
-                  type="password"
-                  placeholder="Enter API Secret"
-                />
-              </FormControl>
-              {selectedExchange.toLowerCase() === 'okx' && (
+        <Modal isOpen={isOpen} onClose={onClose}>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Set {selectedExchange} API Credentials</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody pb={6}>
+              <VStack spacing={4}>
                 <FormControl>
-                  <FormLabel>Passphrase</FormLabel>
+                  <FormLabel>API Key</FormLabel>
                   <Input
-                    value={passphrase}
-                    onChange={(e) => setPassphrase(e.target.value)}
-                    type="password"
-                    placeholder="Enter Passphrase"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="Enter API Key"
                   />
                 </FormControl>
-              )}
-              <Button
-                colorScheme="blue"
-                width="100%"
-                onClick={handleSaveCredentials}
-              >
-                Save Credentials
-              </Button>
-            </VStack>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
+                <FormControl>
+                  <FormLabel>API Secret</FormLabel>
+                  <Input
+                    value={apiSecret}
+                    onChange={(e) => setApiSecret(e.target.value)}
+                    type="password"
+                    placeholder="Enter API Secret"
+                  />
+                </FormControl>
+                {selectedExchange.toLowerCase() === 'okx' && (
+                  <FormControl>
+                    <FormLabel>Passphrase</FormLabel>
+                    <Input
+                      value={passphrase}
+                      onChange={(e) => setPassphrase(e.target.value)}
+                      type="password"
+                      placeholder="Enter Passphrase"
+                    />
+                  </FormControl>
+                )}
+                <Button
+                  colorScheme="blue"
+                  width="100%"
+                  onClick={handleSaveCredentials}
+                >
+                  Save Credentials
+                </Button>
+              </VStack>
+            </ModalBody>
+          </ModalContent>
+        </Modal>
+      </VStack>
     </Container>
   );
 };
