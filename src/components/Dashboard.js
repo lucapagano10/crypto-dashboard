@@ -181,7 +181,7 @@ export const Dashboard = () => {
           </CardBody>
         </Card>
 
-        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
+        <SimpleGrid columns={{ base: 1, md: 4 }} spacing={6}>
           <Card>
             <CardBody>
               <VStack align="stretch" spacing={4}>
@@ -214,6 +214,15 @@ export const Dashboard = () => {
                 <Button size="sm" onClick={() => handleSetCredentials('OKX', 1)}>
                   Set API Credentials
                 </Button>
+              </VStack>
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardBody>
+              <VStack align="stretch" spacing={4}>
+                <Heading size="md">Savings Bank</Heading>
+                {renderExchangeContent('Savings Bank')}
               </VStack>
             </CardBody>
           </Card>
