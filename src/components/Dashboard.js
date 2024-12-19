@@ -47,6 +47,7 @@ export const Dashboard = () => {
   const [apiKey, setApiKey] = useState('');
   const [apiSecret, setApiSecret] = useState('');
   const [passphrase, setPassphrase] = useState('');
+  const [selectedAccountIndex, setSelectedAccountIndex] = useState(0);
 
   const fetchBalances = async () => {
     try {
@@ -66,11 +67,12 @@ export const Dashboard = () => {
     }
   };
 
-  const handleSetCredentials = (exchange) => {
+  const handleSetCredentials = (exchange, accountIndex) => {
     setSelectedExchange(exchange);
     setApiKey('');
     setApiSecret('');
     setPassphrase('');
+    setSelectedAccountIndex(accountIndex);
     onOpen();
   };
 
@@ -79,7 +81,8 @@ export const Dashboard = () => {
       selectedExchange,
       apiKey,
       apiSecret,
-      selectedExchange.toLowerCase() === 'okx' ? passphrase : undefined
+      selectedExchange.toLowerCase() === 'okx' ? passphrase : undefined,
+      selectedAccountIndex
     );
     toast({
       title: 'Credentials saved',
@@ -143,53 +146,78 @@ export const Dashboard = () => {
         </Card>
 
         <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
-          {['Bybit', 'Binance', 'OKX'].map((exchange) => {
-            const exchangeData = balances.find((b) => b.exchange === exchange);
-            return (
-              <Card key={exchange}>
-                <CardBody>
-                  <VStack align="stretch" spacing={4}>
-                    <Heading size="md">{exchange}</Heading>
-                    <Text>
-                      Balance: ${exchangeData?.totalUSD.toLocaleString() || '0'}
-                    </Text>
-                    {exchangeData?.error && (
-                      <Text color="red.500" fontSize="sm">
-                        Error: {exchangeData.error}
-                      </Text>
-                    )}
-                    {exchangeData?.balances && exchangeData.balances.length > 0 && (
-                      <TableContainer>
-                        <Table size="sm" variant="simple">
-                          <Thead>
-                            <Tr>
-                              <Th>Asset</Th>
-                              <Th isNumeric>Total</Th>
-                            </Tr>
-                          </Thead>
-                          <Tbody>
-                            {exchangeData.balances.map((balance) => (
-                              <Tr key={balance.asset}>
-                                <Td>{balance.asset}</Td>
-                                <Td isNumeric>{balance.total.toFixed(8)}</Td>
-                              </Tr>
-                            ))}
-                          </Tbody>
-                        </Table>
-                      </TableContainer>
-                    )}
-                    <Button
-                      size="sm"
-                      onClick={() => handleSetCredentials(exchange)}
-                    >
-                      Set API Credentials
-                    </Button>
-                  </VStack>
-                </CardBody>
-              </Card>
-            );
-          })}
+          <Card>
+            <CardBody>
+              <VStack align="stretch" spacing={4}>
+                <Heading size="md">Bybit</Heading>
+                {renderExchangeContent('Bybit')}
+                <Button size="sm" onClick={() => handleSetCredentials('Bybit')}>
+                  Set API Credentials
+                </Button>
+              </VStack>
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardBody>
+              <VStack align="stretch" spacing={4}>
+                <Heading size="md">OKX 1</Heading>
+                {renderExchangeContent('OKX 1')}
+                <Button size="sm" onClick={() => handleSetCredentials('OKX', 0)}>
+                  Set API Credentials
+                </Button>
+              </VStack>
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardBody>
+              <VStack align="stretch" spacing={4}>
+                <Heading size="md">OKX 2</Heading>
+                {renderExchangeContent('OKX 2')}
+                <Button size="sm" onClick={() => handleSetCredentials('OKX', 1)}>
+                  Set API Credentials
+                </Button>
+              </VStack>
+            </CardBody>
+          </Card>
         </SimpleGrid>
+
+        {function renderExchangeContent(exchangeName) {
+          const exchangeData = balances.find((b) => b.exchange === exchangeName);
+          return (
+            <>
+              <Text>
+                Balance: ${exchangeData?.totalUSD.toLocaleString() || '0'}
+              </Text>
+              {exchangeData?.error && (
+                <Text color="red.500" fontSize="sm">
+                  Error: {exchangeData.error}
+                </Text>
+              )}
+              {exchangeData?.balances && exchangeData.balances.length > 0 && (
+                <TableContainer>
+                  <Table size="sm" variant="simple">
+                    <Thead>
+                      <Tr>
+                        <Th>Asset</Th>
+                        <Th isNumeric>Total</Th>
+                      </Tr>
+                    </Thead>
+                    <Tbody>
+                      {exchangeData.balances.map((balance) => (
+                        <Tr key={balance.asset}>
+                          <Td>{balance.asset}</Td>
+                          <Td isNumeric>{balance.total.toFixed(8)}</Td>
+                        </Tr>
+                      ))}
+                    </Tbody>
+                  </Table>
+                </TableContainer>
+              )}
+            </>
+          );
+        }}
       </VStack>
 
       <Modal isOpen={isOpen} onClose={onClose}>

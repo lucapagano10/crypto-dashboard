@@ -7,9 +7,10 @@ class ExchangeService {
   constructor() {
     this.bybitApiKey = '';
     this.bybitApiSecret = '';
-    this.okxApiKey = '';
-    this.okxApiSecret = '';
-    this.okxPassphrase = '';
+    this.okxAccounts = [
+      { apiKey: '', apiSecret: '', passphrase: '', name: 'OKX 1' },
+      { apiKey: '', apiSecret: '', passphrase: '', name: 'OKX 2' }
+    ];
     this.loadCredentials();
   }
 
@@ -22,9 +23,10 @@ class ExchangeService {
 
         this.bybitApiKey = credentials.bybitApiKey || '';
         this.bybitApiSecret = credentials.bybitApiSecret || '';
-        this.okxApiKey = credentials.okxApiKey || '';
-        this.okxApiSecret = credentials.okxApiSecret || '';
-        this.okxPassphrase = credentials.okxPassphrase || '';
+        this.okxAccounts = credentials.okxAccounts || [
+          { apiKey: '', apiSecret: '', passphrase: '', name: 'OKX 1' },
+          { apiKey: '', apiSecret: '', passphrase: '', name: 'OKX 2' }
+        ];
       }
     } catch (error) {
       console.warn('Failed to load credentials from localStorage:', error);
@@ -37,9 +39,7 @@ class ExchangeService {
       const credentials = {
         bybitApiKey: this.bybitApiKey,
         bybitApiSecret: this.bybitApiSecret,
-        okxApiKey: this.okxApiKey,
-        okxApiSecret: this.okxApiSecret,
-        okxPassphrase: this.okxPassphrase
+        okxAccounts: this.okxAccounts
       };
 
       const encrypted = CryptoJS.AES.encrypt(
@@ -56,9 +56,10 @@ class ExchangeService {
   clearCredentials() {
     this.bybitApiKey = '';
     this.bybitApiSecret = '';
-    this.okxApiKey = '';
-    this.okxApiSecret = '';
-    this.okxPassphrase = '';
+    this.okxAccounts = [
+      { apiKey: '', apiSecret: '', passphrase: '', name: 'OKX 1' },
+      { apiKey: '', apiSecret: '', passphrase: '', name: 'OKX 2' }
+    ];
     localStorage.removeItem(STORAGE_KEY);
   }
 
@@ -74,16 +75,21 @@ class ExchangeService {
       .toString(CryptoJS.enc.Base64);
   }
 
-  setCredentials(exchange, apiKey, apiSecret, passphrase) {
+  setCredentials(exchange, apiKey, apiSecret, passphrase, accountIndex) {
     switch (exchange.toLowerCase()) {
       case 'bybit':
         this.bybitApiKey = apiKey;
         this.bybitApiSecret = apiSecret;
         break;
       case 'okx':
-        this.okxApiKey = apiKey;
-        this.okxApiSecret = apiSecret;
-        if (passphrase) this.okxPassphrase = passphrase;
+        if (accountIndex !== undefined && this.okxAccounts[accountIndex]) {
+          this.okxAccounts[accountIndex] = {
+            ...this.okxAccounts[accountIndex],
+            apiKey,
+            apiSecret,
+            passphrase: passphrase || ''
+          };
+        }
         break;
       default:
         console.warn('Unknown exchange:', exchange);
@@ -169,27 +175,30 @@ class ExchangeService {
     }
   }
 
-  async getOKXBalance() {
+  async getOKXBalance(account) {
     try {
-      if (!this.okxApiKey || !this.okxApiSecret || !this.okxPassphrase) {
+      if (!account.apiKey || !account.apiSecret || !account.passphrase) {
         throw new Error('OKX API credentials not set');
       }
 
       const timestamp = new Date().toISOString();
       const method = 'GET';
       const path = '/api/v5/asset/balances';
-      const signature = this.signOKX(timestamp, method, path);
+      const signature = CryptoJS.HmacSHA256(
+        timestamp + method + path,
+        account.apiSecret
+      ).toString(CryptoJS.enc.Base64);
 
       const response = await axios.get('https://www.okx.com' + path, {
         headers: {
-          'OK-ACCESS-KEY': this.okxApiKey,
+          'OK-ACCESS-KEY': account.apiKey,
           'OK-ACCESS-SIGN': signature,
           'OK-ACCESS-TIMESTAMP': timestamp,
-          'OK-ACCESS-PASSPHRASE': this.okxPassphrase,
+          'OK-ACCESS-PASSPHRASE': account.passphrase,
         },
       });
 
-      console.log('OKX Response:', response.data);
+      console.log(`OKX Response (${account.name}):`, response.data);
 
       const balances = [];
       let totalUSD = 0;
@@ -217,17 +226,17 @@ class ExchangeService {
         }
       }
 
-      console.log('Total USD Value:', totalUSD);
+      console.log(`Total USD Value (${account.name}):`, totalUSD);
 
       return {
-        exchange: 'OKX',
+        exchange: account.name,
         balances,
         totalUSD
       };
     } catch (error) {
-      console.error('Error fetching OKX balance:', error);
+      console.error(`Error fetching ${account.name} balance:`, error);
       return {
-        exchange: 'OKX',
+        exchange: account.name,
         balances: [],
         totalUSD: 0,
         error: error.message
@@ -238,7 +247,7 @@ class ExchangeService {
   async getAllBalances() {
     const results = await Promise.all([
       this.getBybitBalance(),
-      this.getOKXBalance()
+      ...this.okxAccounts.map(account => this.getOKXBalance(account))
     ]);
 
     return results;
