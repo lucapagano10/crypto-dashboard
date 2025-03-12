@@ -35,6 +35,7 @@ import {
   IconButton,
   Tooltip,
 } from '@chakra-ui/react';
+import { RepeatIcon, DeleteIcon, LockIcon } from '@chakra-ui/icons';
 import { exchangeService } from '../services/exchangeService';
 
 export const Dashboard = () => {
@@ -53,7 +54,7 @@ export const Dashboard = () => {
     const exchangeData = balances.find((b) => b.exchange === exchangeName);
     return (
       <>
-        <Text>
+        <Text color="brand.400" fontSize="lg" fontWeight="bold">
           Balance: ${exchangeData?.totalUSD.toLocaleString() || '0'}
         </Text>
         {exchangeData?.error && (
@@ -63,18 +64,18 @@ export const Dashboard = () => {
         )}
         {exchangeData?.balances && exchangeData.balances.length > 0 && (
           <TableContainer>
-            <Table size="sm" variant="simple">
+            <Table size="sm" variant="unstyled">
               <Thead>
                 <Tr>
-                  <Th>Asset</Th>
-                  <Th isNumeric>Total</Th>
+                  <Th color="gray.400" pl={0}>Asset</Th>
+                  <Th color="gray.400" isNumeric pr={0}>Total</Th>
                 </Tr>
               </Thead>
               <Tbody>
                 {exchangeData.balances.map((balance) => (
-                  <Tr key={balance.asset}>
-                    <Td>{balance.asset}</Td>
-                    <Td isNumeric>{balance.total.toFixed(8)}</Td>
+                  <Tr key={balance.asset} _hover={{ bg: 'gray.800' }}>
+                    <Td color="white" pl={0}>{balance.asset}</Td>
+                    <Td color="white" isNumeric pr={0}>{balance.total.toFixed(8)}</Td>
                   </Tr>
                 ))}
               </Tbody>
@@ -147,134 +148,193 @@ export const Dashboard = () => {
   };
 
   return (
-    <Container maxW="container.xl" py={8}>
-      <VStack spacing={8} align="stretch">
-        <HStack justify="space-between">
-          <Heading size="lg">Crypto Exchange Dashboard</Heading>
-          <HStack>
-            <Button
-              colorScheme="blue"
-              onClick={fetchBalances}
-              isLoading={isLoading}
-            >
-              Refresh Balances
-            </Button>
-            <Tooltip label="Clear all API credentials">
+    <Box bg="#14142B" minH="100vh">
+      <Container maxW="container.xl" py={8}>
+        <VStack spacing={8} align="stretch">
+          <HStack justify="space-between" mb={6}>
+            <VStack align="start" spacing={1}>
+              <Heading size="lg" color="white" fontWeight="bold">
+                Moony Money Dashboard
+              </Heading>
+              <Text color="gray.400">
+                Manage your crypto portfolio across exchanges
+              </Text>
+            </VStack>
+            <HStack>
               <Button
-                colorScheme="red"
-                variant="outline"
-                onClick={handleClearCredentials}
+                bg="brand.500"
+                color="white"
+                onClick={fetchBalances}
+                isLoading={isLoading}
+                _hover={{ bg: 'brand.600' }}
+                leftIcon={<RepeatIcon />}
               >
-                Clear All Credentials
+                Refresh Balances
               </Button>
-            </Tooltip>
-          </HStack>
-        </HStack>
-
-        <Card>
-          <CardBody>
-            <Stat>
-              <StatLabel>Total Portfolio Value</StatLabel>
-              <StatNumber>${getTotalBalance().toLocaleString()}</StatNumber>
-              <StatHelpText>Across all exchanges</StatHelpText>
-            </Stat>
-          </CardBody>
-        </Card>
-
-        <SimpleGrid columns={{ base: 1, md: 4 }} spacing={6}>
-          <Card>
-            <CardBody>
-              <VStack align="stretch" spacing={4}>
-                <Heading size="md">Bybit</Heading>
-                {renderExchangeContent('Bybit')}
-                <Button size="sm" onClick={() => handleSetCredentials('Bybit')}>
-                  Set API Credentials
-                </Button>
-              </VStack>
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardBody>
-              <VStack align="stretch" spacing={4}>
-                <Heading size="md">OKX 1</Heading>
-                {renderExchangeContent('OKX 1')}
-                <Button size="sm" onClick={() => handleSetCredentials('OKX', 0)}>
-                  Set API Credentials
-                </Button>
-              </VStack>
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardBody>
-              <VStack align="stretch" spacing={4}>
-                <Heading size="md">OKX 2</Heading>
-                {renderExchangeContent('OKX 2')}
-                <Button size="sm" onClick={() => handleSetCredentials('OKX', 1)}>
-                  Set API Credentials
-                </Button>
-              </VStack>
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardBody>
-              <VStack align="stretch" spacing={4}>
-                <Heading size="md">Savings Bank</Heading>
-                {renderExchangeContent('Savings Bank')}
-              </VStack>
-            </CardBody>
-          </Card>
-        </SimpleGrid>
-
-        <Modal isOpen={isOpen} onClose={onClose}>
-          <ModalOverlay />
-          <ModalContent>
-            <ModalHeader>Set {selectedExchange} API Credentials</ModalHeader>
-            <ModalCloseButton />
-            <ModalBody pb={6}>
-              <VStack spacing={4}>
-                <FormControl>
-                  <FormLabel>API Key</FormLabel>
-                  <Input
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                    placeholder="Enter API Key"
-                  />
-                </FormControl>
-                <FormControl>
-                  <FormLabel>API Secret</FormLabel>
-                  <Input
-                    value={apiSecret}
-                    onChange={(e) => setApiSecret(e.target.value)}
-                    type="password"
-                    placeholder="Enter API Secret"
-                  />
-                </FormControl>
-                {selectedExchange.toLowerCase() === 'okx' && (
-                  <FormControl>
-                    <FormLabel>Passphrase</FormLabel>
-                    <Input
-                      value={passphrase}
-                      onChange={(e) => setPassphrase(e.target.value)}
-                      type="password"
-                      placeholder="Enter Passphrase"
-                    />
-                  </FormControl>
-                )}
+              <Tooltip label="Clear all API credentials">
                 <Button
-                  colorScheme="blue"
-                  width="100%"
-                  onClick={handleSaveCredentials}
+                  variant="outline"
+                  borderColor="red.500"
+                  color="red.500"
+                  onClick={handleClearCredentials}
+                  _hover={{ bg: 'rgba(229, 62, 62, 0.1)' }}
+                  leftIcon={<DeleteIcon />}
                 >
-                  Save Credentials
+                  Clear All Credentials
                 </Button>
-              </VStack>
-            </ModalBody>
-          </ModalContent>
-        </Modal>
-      </VStack>
-    </Container>
+              </Tooltip>
+            </HStack>
+          </HStack>
+
+          <Card bg="gray.900" borderRadius="xl" border="1px solid" borderColor="gray.800">
+            <CardBody>
+              <Stat>
+                <StatLabel color="gray.400">Total Portfolio Value</StatLabel>
+                <StatNumber fontSize="3xl" color="white">
+                  ${getTotalBalance().toLocaleString()}
+                </StatNumber>
+                <StatHelpText color="brand.400">Across all exchanges</StatHelpText>
+              </Stat>
+            </CardBody>
+          </Card>
+
+          <SimpleGrid columns={{ base: 1, md: 4 }} spacing={6}>
+            <Card bg="gray.900" borderRadius="xl" border="1px solid" borderColor="gray.800">
+              <CardBody>
+                <VStack align="stretch" spacing={4}>
+                  <Heading size="md" color="white">Bybit</Heading>
+                  {renderExchangeContent('Bybit')}
+                  <Button
+                    size="sm"
+                    onClick={() => handleSetCredentials('Bybit')}
+                    bg="brand.500"
+                    color="white"
+                    _hover={{ bg: 'brand.600' }}
+                    leftIcon={<LockIcon />}
+                  >
+                    Set API Credentials
+                  </Button>
+                </VStack>
+              </CardBody>
+            </Card>
+
+            <Card bg="gray.900" borderRadius="xl" border="1px solid" borderColor="gray.800">
+              <CardBody>
+                <VStack align="stretch" spacing={4}>
+                  <Heading size="md" color="white">OKX 1</Heading>
+                  {renderExchangeContent('OKX 1')}
+                  <Button
+                    size="sm"
+                    onClick={() => handleSetCredentials('OKX', 0)}
+                    bg="brand.500"
+                    color="white"
+                    _hover={{ bg: 'brand.600' }}
+                    leftIcon={<LockIcon />}
+                  >
+                    Set API Credentials
+                  </Button>
+                </VStack>
+              </CardBody>
+            </Card>
+
+            <Card bg="gray.900" borderRadius="xl" border="1px solid" borderColor="gray.800">
+              <CardBody>
+                <VStack align="stretch" spacing={4}>
+                  <Heading size="md" color="white">OKX 2</Heading>
+                  {renderExchangeContent('OKX 2')}
+                  <Button
+                    size="sm"
+                    onClick={() => handleSetCredentials('OKX', 1)}
+                    bg="brand.500"
+                    color="white"
+                    _hover={{ bg: 'brand.600' }}
+                    leftIcon={<LockIcon />}
+                  >
+                    Set API Credentials
+                  </Button>
+                </VStack>
+              </CardBody>
+            </Card>
+
+            <Card bg="gray.900" borderRadius="xl" border="1px solid" borderColor="gray.800">
+              <CardBody>
+                <VStack align="stretch" spacing={4}>
+                  <Heading size="md" color="white">Savings Bank</Heading>
+                  {renderExchangeContent('Savings Bank')}
+                </VStack>
+              </CardBody>
+            </Card>
+          </SimpleGrid>
+        </VStack>
+      </Container>
+
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <ModalOverlay backdropFilter="blur(4px)" />
+        <ModalContent bg="gray.900" borderRadius="xl">
+          <ModalHeader color="white">Set {selectedExchange} API Credentials</ModalHeader>
+          <ModalCloseButton color="white" />
+          <ModalBody pb={6}>
+            <VStack spacing={4}>
+              <FormControl>
+                <FormLabel color="gray.400">API Key</FormLabel>
+                <Input
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="Enter API Key"
+                  bg="gray.800"
+                  border="1px solid"
+                  borderColor="gray.700"
+                  color="white"
+                  _placeholder={{ color: 'gray.500' }}
+                  _hover={{ borderColor: 'brand.500' }}
+                  _focus={{ borderColor: 'brand.500', boxShadow: 'none' }}
+                />
+              </FormControl>
+              <FormControl>
+                <FormLabel color="gray.400">API Secret</FormLabel>
+                <Input
+                  value={apiSecret}
+                  onChange={(e) => setApiSecret(e.target.value)}
+                  placeholder="Enter API Secret"
+                  bg="gray.800"
+                  border="1px solid"
+                  borderColor="gray.700"
+                  color="white"
+                  _placeholder={{ color: 'gray.500' }}
+                  _hover={{ borderColor: 'brand.500' }}
+                  _focus={{ borderColor: 'brand.500', boxShadow: 'none' }}
+                />
+              </FormControl>
+              {selectedExchange.toLowerCase() === 'okx' && (
+                <FormControl>
+                  <FormLabel color="gray.400">Passphrase</FormLabel>
+                  <Input
+                    value={passphrase}
+                    onChange={(e) => setPassphrase(e.target.value)}
+                    placeholder="Enter Passphrase"
+                    bg="gray.800"
+                    border="1px solid"
+                    borderColor="gray.700"
+                    color="white"
+                    _placeholder={{ color: 'gray.500' }}
+                    _hover={{ borderColor: 'brand.500' }}
+                    _focus={{ borderColor: 'brand.500', boxShadow: 'none' }}
+                  />
+                </FormControl>
+              )}
+              <Button
+                bg="brand.500"
+                color="white"
+                width="100%"
+                onClick={handleSaveCredentials}
+                leftIcon={<LockIcon />}
+              >
+                Save Credentials
+              </Button>
+            </VStack>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+    </Box>
   );
 };
