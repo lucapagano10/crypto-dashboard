@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -36,6 +36,8 @@ import {
 } from '@chakra-ui/react';
 import { RepeatIcon, DeleteIcon, LockIcon } from '@chakra-ui/icons';
 import { exchangeService } from '../services/exchangeService';
+import { balanceHistoryService } from '../services/balanceHistoryService';
+import { BalanceChart } from './BalanceChart';
 
 export const Dashboard = () => {
   const [balances, setBalances] = useState([]);
@@ -48,6 +50,14 @@ export const Dashboard = () => {
   const [apiSecret, setApiSecret] = useState('');
   const [passphrase, setPassphrase] = useState('');
   const [selectedAccountIndex, setSelectedAccountIndex] = useState(0);
+
+  const [history, setHistory] = useState([]);
+  const [metrics, setMetrics] = useState(null);
+
+  useEffect(() => {
+    setHistory(balanceHistoryService.getHistory());
+    setMetrics(balanceHistoryService.getMetrics());
+  }, []);
 
   const renderExchangeContent = (exchangeName) => {
     const exchangeData = balances.find((b) => b.exchange === exchangeName);
@@ -90,6 +100,14 @@ export const Dashboard = () => {
       setIsLoading(true);
       const data = await exchangeService.getAllBalances();
       setBalances(data);
+
+      // Save balance history
+      const totalUSD = data.reduce((sum, exchange) => sum + exchange.totalUSD, 0);
+      balanceHistoryService.saveBalance(totalUSD, data);
+
+      // Update history and metrics
+      setHistory(balanceHistoryService.getHistory());
+      setMetrics(balanceHistoryService.getMetrics());
     } catch (error) {
       toast({
         title: 'Error fetching balances',
@@ -196,6 +214,8 @@ export const Dashboard = () => {
               </Stat>
             </CardBody>
           </Card>
+
+          <BalanceChart history={history} metrics={metrics} />
 
           <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
             <Card bg="gray.900" borderRadius="xl" border="1px solid" borderColor="gray.800">
