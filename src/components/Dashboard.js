@@ -12,7 +12,6 @@ import {
   StatLabel,
   StatNumber,
   StatHelpText,
-  SimpleGrid,
   Button,
   useToast,
   Input,
@@ -33,6 +32,12 @@ import {
   Th,
   Td,
   Tooltip,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon,
+  SimpleGrid,
 } from '@chakra-ui/react';
 import { RepeatIcon, DeleteIcon, LockIcon } from '@chakra-ui/icons';
 import { exchangeService } from '../services/exchangeService';
@@ -205,76 +210,122 @@ export const Dashboard = () => {
 
           <Card bg="gray.900" borderRadius="xl" border="1px solid" borderColor="gray.800">
             <CardBody>
-              <Stat>
-                <StatLabel color="gray.400">Total Portfolio Value</StatLabel>
-                <StatNumber fontSize="3xl" color="white">
-                  ${getTotalBalance().toLocaleString()}
-                </StatNumber>
-                <StatHelpText color="brand.400">Across all exchanges</StatHelpText>
-              </Stat>
+              <VStack spacing={4} align="stretch">
+                <Stat>
+                  <StatLabel color="gray.400">Total Portfolio Value</StatLabel>
+                  <StatNumber fontSize="3xl" color="white">
+                    ${getTotalBalance().toLocaleString()}
+                  </StatNumber>
+                  <StatHelpText color="brand.400">Across all exchanges</StatHelpText>
+                </Stat>
+
+                <Accordion allowToggle>
+                  <AccordionItem border="none">
+                    <AccordionButton px={0} _hover={{ bg: 'transparent' }}>
+                      <Text color="brand.400" flex="1" textAlign="left">
+                        View Exchange Details
+                      </Text>
+                      <AccordionIcon color="brand.400" />
+                    </AccordionButton>
+                    <AccordionPanel pb={4} px={0}>
+                      <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+                        <Card bg="gray.800" borderRadius="xl" border="1px solid" borderColor="gray.700">
+                          <CardBody>
+                            <VStack align="stretch" spacing={4}>
+                              <Heading size="md" color="white">Bybit</Heading>
+                              {renderExchangeContent('Bybit')}
+                              <Button
+                                size="sm"
+                                onClick={() => handleSetCredentials('Bybit')}
+                                bg="brand.500"
+                                color="white"
+                                _hover={{ bg: 'brand.600' }}
+                                leftIcon={<LockIcon />}
+                              >
+                                Set API Credentials
+                              </Button>
+                            </VStack>
+                          </CardBody>
+                        </Card>
+
+                        <Card bg="gray.800" borderRadius="xl" border="1px solid" borderColor="gray.700">
+                          <CardBody>
+                            <VStack align="stretch" spacing={4}>
+                              <Heading size="md" color="white">OKX 1</Heading>
+                              {renderExchangeContent('OKX 1')}
+                              <Button
+                                size="sm"
+                                onClick={() => handleSetCredentials('OKX', 0)}
+                                bg="brand.500"
+                                color="white"
+                                _hover={{ bg: 'brand.600' }}
+                                leftIcon={<LockIcon />}
+                              >
+                                Set API Credentials
+                              </Button>
+                            </VStack>
+                          </CardBody>
+                        </Card>
+
+                        <Card bg="gray.800" borderRadius="xl" border="1px solid" borderColor="gray.700">
+                          <CardBody>
+                            <VStack align="stretch" spacing={4}>
+                              <Heading size="md" color="white">OKX 2</Heading>
+                              {renderExchangeContent('OKX 2')}
+                              <Button
+                                size="sm"
+                                onClick={() => handleSetCredentials('OKX', 1)}
+                                bg="brand.500"
+                                color="white"
+                                _hover={{ bg: 'brand.600' }}
+                                leftIcon={<LockIcon />}
+                              >
+                                Set API Credentials
+                              </Button>
+                            </VStack>
+                          </CardBody>
+                        </Card>
+                      </SimpleGrid>
+                    </AccordionPanel>
+                  </AccordionItem>
+                </Accordion>
+              </VStack>
             </CardBody>
           </Card>
 
+          {metrics && (
+            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+              <Card bg="gray.900" borderRadius="xl" border="1px solid" borderColor="gray.800">
+                <CardBody>
+                  <MetricCard
+                    label="24h Change"
+                    change={metrics.daily.change}
+                    percentage={metrics.daily.percentage}
+                  />
+                </CardBody>
+              </Card>
+              <Card bg="gray.900" borderRadius="xl" border="1px solid" borderColor="gray.800">
+                <CardBody>
+                  <MetricCard
+                    label="7d Change"
+                    change={metrics.weekly.change}
+                    percentage={metrics.weekly.percentage}
+                  />
+                </CardBody>
+              </Card>
+              <Card bg="gray.900" borderRadius="xl" border="1px solid" borderColor="gray.800">
+                <CardBody>
+                  <MetricCard
+                    label="30d Change"
+                    change={metrics.monthly.change}
+                    percentage={metrics.monthly.percentage}
+                  />
+                </CardBody>
+              </Card>
+            </SimpleGrid>
+          )}
+
           <BalanceChart history={history} metrics={metrics} />
-
-          <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
-            <Card bg="gray.900" borderRadius="xl" border="1px solid" borderColor="gray.800">
-              <CardBody>
-                <VStack align="stretch" spacing={4}>
-                  <Heading size="md" color="white">Bybit</Heading>
-                  {renderExchangeContent('Bybit')}
-                  <Button
-                    size="sm"
-                    onClick={() => handleSetCredentials('Bybit')}
-                    bg="brand.500"
-                    color="white"
-                    _hover={{ bg: 'brand.600' }}
-                    leftIcon={<LockIcon />}
-                  >
-                    Set API Credentials
-                  </Button>
-                </VStack>
-              </CardBody>
-            </Card>
-
-            <Card bg="gray.900" borderRadius="xl" border="1px solid" borderColor="gray.800">
-              <CardBody>
-                <VStack align="stretch" spacing={4}>
-                  <Heading size="md" color="white">OKX 1</Heading>
-                  {renderExchangeContent('OKX 1')}
-                  <Button
-                    size="sm"
-                    onClick={() => handleSetCredentials('OKX', 0)}
-                    bg="brand.500"
-                    color="white"
-                    _hover={{ bg: 'brand.600' }}
-                    leftIcon={<LockIcon />}
-                  >
-                    Set API Credentials
-                  </Button>
-                </VStack>
-              </CardBody>
-            </Card>
-
-            <Card bg="gray.900" borderRadius="xl" border="1px solid" borderColor="gray.800">
-              <CardBody>
-                <VStack align="stretch" spacing={4}>
-                  <Heading size="md" color="white">OKX 2</Heading>
-                  {renderExchangeContent('OKX 2')}
-                  <Button
-                    size="sm"
-                    onClick={() => handleSetCredentials('OKX', 1)}
-                    bg="brand.500"
-                    color="white"
-                    _hover={{ bg: 'brand.600' }}
-                    leftIcon={<LockIcon />}
-                  >
-                    Set API Credentials
-                  </Button>
-                </VStack>
-              </CardBody>
-            </Card>
-          </SimpleGrid>
         </VStack>
       </Container>
 
