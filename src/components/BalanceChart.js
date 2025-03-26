@@ -56,10 +56,48 @@ export const BalanceChart = ({ history, metrics }) => {
     date: formatDate(item.timestamp),
     balance: item.total_balance,
     timestamp: item.timestamp,
-  }));
+  })).sort((a, b) => a.timestamp - b.timestamp); // Sort by timestamp
 
   return (
     <Grid templateColumns="repeat(4, 1fr)" gap={6}>
+      {metrics && (
+        <>
+          <GridItem colSpan={1}>
+            <Card bg="gray.900" borderRadius="xl" border="1px solid" borderColor="gray.800">
+              <CardBody>
+                <MetricCard
+                  label="24h Change"
+                  change={metrics.daily.change}
+                  percentage={metrics.daily.percentage}
+                />
+              </CardBody>
+            </Card>
+          </GridItem>
+          <GridItem colSpan={1}>
+            <Card bg="gray.900" borderRadius="xl" border="1px solid" borderColor="gray.800">
+              <CardBody>
+                <MetricCard
+                  label="7d Change"
+                  change={metrics.weekly.change}
+                  percentage={metrics.weekly.percentage}
+                />
+              </CardBody>
+            </Card>
+          </GridItem>
+          <GridItem colSpan={1}>
+            <Card bg="gray.900" borderRadius="xl" border="1px solid" borderColor="gray.800">
+              <CardBody>
+                <MetricCard
+                  label="30d Change"
+                  change={metrics.monthly.change}
+                  percentage={metrics.monthly.percentage}
+                />
+              </CardBody>
+            </Card>
+          </GridItem>
+        </>
+      )}
+
       <GridItem colSpan={4}>
         <Card bg="gray.900" borderRadius="xl" border="1px solid" borderColor="gray.800">
           <CardBody>
@@ -110,44 +148,6 @@ export const BalanceChart = ({ history, metrics }) => {
           </CardBody>
         </Card>
       </GridItem>
-
-      {metrics && (
-        <>
-          <GridItem colSpan={1}>
-            <Card bg="gray.900" borderRadius="xl" border="1px solid" borderColor="gray.800">
-              <CardBody>
-                <MetricCard
-                  label="24h Change"
-                  change={metrics.daily.change}
-                  percentage={metrics.daily.percentage}
-                />
-              </CardBody>
-            </Card>
-          </GridItem>
-          <GridItem colSpan={1}>
-            <Card bg="gray.900" borderRadius="xl" border="1px solid" borderColor="gray.800">
-              <CardBody>
-                <MetricCard
-                  label="7d Change"
-                  change={metrics.weekly.change}
-                  percentage={metrics.weekly.percentage}
-                />
-              </CardBody>
-            </Card>
-          </GridItem>
-          <GridItem colSpan={1}>
-            <Card bg="gray.900" borderRadius="xl" border="1px solid" borderColor="gray.800">
-              <CardBody>
-                <MetricCard
-                  label="30d Change"
-                  change={metrics.monthly.change}
-                  percentage={metrics.monthly.percentage}
-                />
-              </CardBody>
-            </Card>
-          </GridItem>
-        </>
-      )}
     </Grid>
   );
 };
