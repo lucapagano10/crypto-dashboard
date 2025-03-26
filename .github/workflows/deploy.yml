@@ -33,22 +33,47 @@ jobs:
 
       - name: Install dependencies
         run: |
+          echo "Installing dependencies..."
           npm ci
-          npm install -g gh-pages --save-dev
+          echo "Installing gh-pages..."
+          npm install gh-pages --save-dev
+
+      - name: List project files
+        run: |
+          echo "Current directory contents:"
+          ls -la
+          echo "Package.json contents:"
+          cat package.json
 
       - name: Build
         env:
           PUBLIC_URL: "https://lucapagano10.github.io/crypto-dashboard"
+          NODE_ENV: "production"
         run: |
-          npm run build
+          echo "Starting build process..."
+          npm run build || {
+            echo "Build failed. Checking for errors..."
+            echo "Node version:"
+            node -v
+            echo "NPM version:"
+            npm -v
+            echo "Directory contents:"
+            ls -la
+            exit 1
+          }
 
       - name: Debug build output
-        if: failure()
+        if: always()
         run: |
+          echo "Workspace contents:"
           ls -la
+          echo "Build directory contents (if exists):"
           ls -la build || echo "Build directory not found"
+          echo "Node modules:"
+          ls -la node_modules || echo "node_modules not found"
 
       - name: Upload artifact
+        if: success()
         uses: actions/upload-pages-artifact@v3
         with:
           path: build
