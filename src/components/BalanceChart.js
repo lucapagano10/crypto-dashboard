@@ -54,7 +54,7 @@ const MetricCard = ({ label, change, percentage }) => (
 export const BalanceChart = ({ history, metrics }) => {
   const data = history.map(item => ({
     date: formatDate(item.timestamp),
-    balance: item.totalUSD,
+    balance: item.total_balance,
     timestamp: item.timestamp,
   }));
 
@@ -67,7 +67,7 @@ export const BalanceChart = ({ history, metrics }) => {
               <Text color="gray.400" fontSize="sm">Balance History</Text>
               <div style={{ width: '100%', height: 300 }}>
                 <ResponsiveContainer>
-                  <AreaChart data={data} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                  <AreaChart data={data} margin={{ top: 5, right: 30, bottom: 5, left: 10 }}>
                     <defs>
                       <linearGradient id="balance" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#6366f1" stopOpacity={0.5} />
@@ -84,6 +84,8 @@ export const BalanceChart = ({ history, metrics }) => {
                       stroke="#718096"
                       tick={{ fill: '#718096' }}
                       tickFormatter={(value) => formatUSD(value)}
+                      width={80}
+                      domain={['auto', 'auto']}
                     />
                     <Tooltip
                       contentStyle={{
