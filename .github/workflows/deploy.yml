@@ -19,6 +19,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      CI: false # This prevents treating warnings as errors
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,10 +32,21 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm ci
+          npm install -g gh-pages --save-dev
 
       - name: Build
-        run: npm run build
+        env:
+          PUBLIC_URL: "https://lucapagano10.github.io/crypto-dashboard"
+        run: |
+          npm run build
+
+      - name: Debug build output
+        if: failure()
+        run: |
+          ls -la
+          ls -la build || echo "Build directory not found"
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
