@@ -49,6 +49,8 @@ jobs:
         env:
           PUBLIC_URL: "https://lucapagano10.github.io/crypto-dashboard"
           NODE_ENV: "production"
+          REACT_APP_SUPABASE_URL: "https://nlwkruiwmlvayduwusny.supabase.co"
+          REACT_APP_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sd2tydWl3bWx2YXlkdXd1c255Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI5MTE2NDUsImV4cCI6MjA1ODQ4NzY0NX0.mhzRokTOohdTeVzA2Nk98hVy9V0hR7WGxhcC4AB1s5A"
         run: |
           echo "Starting build process..."
           npm run build || {
