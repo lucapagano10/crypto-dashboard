@@ -60,8 +60,14 @@ export const Dashboard = () => {
   const [metrics, setMetrics] = useState(null);
 
   useEffect(() => {
-    setHistory(balanceHistoryService.getHistory());
-    setMetrics(balanceHistoryService.getMetrics());
+    const loadHistory = async () => {
+      const historyData = await balanceHistoryService.getHistory();
+      const metricsData = await balanceHistoryService.getMetrics();
+      setHistory(historyData);
+      setMetrics(metricsData);
+    };
+
+    loadHistory();
   }, []);
 
   const renderExchangeContent = (exchangeName) => {
@@ -108,11 +114,11 @@ export const Dashboard = () => {
 
       // Save balance history
       const totalUSD = data.reduce((sum, exchange) => sum + exchange.totalUSD, 0);
-      balanceHistoryService.saveBalance(totalUSD, data);
+      const updatedHistory = await balanceHistoryService.saveBalance(totalUSD, data);
 
       // Update history and metrics
-      setHistory(balanceHistoryService.getHistory());
-      setMetrics(balanceHistoryService.getMetrics());
+      setHistory(updatedHistory);
+      setMetrics(await balanceHistoryService.getMetrics());
     } catch (error) {
       toast({
         title: 'Error fetching balances',
