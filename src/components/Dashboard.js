@@ -12,7 +12,6 @@ import {
   StatLabel,
   StatNumber,
   StatHelpText,
-  StatArrow,
   Button,
   useToast,
   Input,
@@ -44,21 +43,6 @@ import { RepeatIcon, DeleteIcon, LockIcon } from '@chakra-ui/icons';
 import { exchangeService } from '../services/exchangeService';
 import { balanceHistoryService } from '../services/balanceHistoryService';
 import { BalanceChart } from './BalanceChart';
-
-const MetricCard = ({ label, change, percentage }) => (
-  <Stat>
-    <StatLabel color="gray.400">{label}</StatLabel>
-    <StatNumber fontSize="xl" color="white">
-      <HStack spacing={2} align="center">
-        <StatArrow type={percentage >= 0 ? 'increase' : 'decrease'} />
-        <Text>{percentage.toFixed(2)}%</Text>
-      </HStack>
-    </StatNumber>
-    <Text color={change >= 0 ? 'green.400' : 'red.400'} fontSize="sm">
-      ${change.toLocaleString()}
-    </Text>
-  </Stat>
-);
 
 export const Dashboard = () => {
   const [balances, setBalances] = useState([]);
@@ -308,38 +292,6 @@ export const Dashboard = () => {
               </VStack>
             </CardBody>
           </Card>
-
-          {metrics && (
-            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
-              <Card bg="gray.900" borderRadius="xl" border="1px solid" borderColor="gray.800">
-                <CardBody>
-                  <MetricCard
-                    label="24h Change"
-                    change={metrics.daily.change}
-                    percentage={metrics.daily.percentage}
-                  />
-                </CardBody>
-              </Card>
-              <Card bg="gray.900" borderRadius="xl" border="1px solid" borderColor="gray.800">
-                <CardBody>
-                  <MetricCard
-                    label="7d Change"
-                    change={metrics.weekly.change}
-                    percentage={metrics.weekly.percentage}
-                  />
-                </CardBody>
-              </Card>
-              <Card bg="gray.900" borderRadius="xl" border="1px solid" borderColor="gray.800">
-                <CardBody>
-                  <MetricCard
-                    label="30d Change"
-                    change={metrics.monthly.change}
-                    percentage={metrics.monthly.percentage}
-                  />
-                </CardBody>
-              </Card>
-            </SimpleGrid>
-          )}
 
           <BalanceChart history={history} metrics={metrics} />
         </VStack>
