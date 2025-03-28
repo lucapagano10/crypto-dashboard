@@ -2,8 +2,6 @@ import { supabase } from '../lib/supabase';
 
 export const balanceHistoryService = {
   async saveBalance(totalUSD, exchanges) {
-    const timestamp = new Date();
-
     try {
       // Find balances for each exchange
       const bybitExchange = exchanges.find(e => e.exchange === 'Bybit');
@@ -13,7 +11,6 @@ export const balanceHistoryService = {
       const { data, error } = await supabase
         .from('crypto_balance_history')
         .insert([{
-          timestamp,
           bybit_balance: bybitExchange?.totalUSD || 0,
           okx1_balance: okx1Exchange?.totalUSD || 0,
           okx2_balance: okx2Exchange?.totalUSD || 0,
@@ -21,6 +18,7 @@ export const balanceHistoryService = {
           spot_balance: totalUSD, // For now, treating all as spot balance
           snapshot_source: 'automatic',
           currency: 'USD'
+          // timestamp will be automatically set by the database
         }]);
 
       if (error) {
@@ -41,11 +39,15 @@ export const balanceHistoryService = {
   async getHistory() {
     console.log('Fetching balance history from Supabase...');
     try {
+      // Get data from the last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
       const { data, error } = await supabase
         .from('crypto_balance_history')
         .select('*')
-        .order('timestamp', { ascending: true })
-        .limit(30);
+        .gte('timestamp', thirtyDaysAgo.toISOString())
+        .order('timestamp', { ascending: true });
 
       if (error) {
         console.error('Supabase select error:', error);
@@ -78,9 +80,12 @@ export const balanceHistoryService = {
       if (history.length === 0) return null;
 
       const current = history[history.length - 1].total_balance;
-      const oneDayAgo = this.findClosestValue(history, 24);
-      const sevenDaysAgo = this.findClosestValue(history, 24 * 7);
-      const thirtyDaysAgo = this.findClosestValue(history, 24 * 30);
+
+      // Find values closest to 24h, 7d, and 30d ago
+      const now = Date.now();
+      const oneDayAgo = this.findClosestValue(history, now - (24 * 60 * 60 * 1000));
+      const sevenDaysAgo = this.findClosestValue(history, now - (7 * 24 * 60 * 60 * 1000));
+      const thirtyDaysAgo = this.findClosestValue(history, now - (30 * 24 * 60 * 60 * 1000));
 
       console.log('Calculating metrics:', {
         current,
@@ -103,9 +108,10 @@ export const balanceHistoryService = {
     }
   },
 
-  findClosestValue(history, hoursAgo) {
-    const targetTime = Date.now() - (hoursAgo * 60 * 60 * 1000);
+  findClosestValue(history, targetTime) {
     console.log(`Finding value closest to ${new Date(targetTime).toLocaleString()}`);
+
+    if (history.length === 0) return 0;
 
     const closest = history.reduce((prev, curr) => {
       return Math.abs(curr.timestamp - targetTime) < Math.abs(prev.timestamp - targetTime) ? curr : prev;
