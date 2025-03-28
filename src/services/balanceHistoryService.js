@@ -43,6 +43,7 @@ export const balanceHistoryService = {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
+      // First, get all data points from the last 30 days
       const { data, error } = await supabase
         .from('crypto_balance_history')
         .select('*')
@@ -54,10 +55,26 @@ export const balanceHistoryService = {
         throw error;
       }
 
-      console.log('Retrieved history from Supabase:', data);
+      console.log('Retrieved raw history from Supabase:', data);
+
+      // Group data by day and take the latest entry for each day
+      const dailyData = data.reduce((acc, record) => {
+        const date = new Date(record.timestamp).toISOString().split('T')[0];
+        if (!acc[date] || new Date(record.timestamp) > new Date(acc[date].timestamp)) {
+          acc[date] = record;
+        }
+        return acc;
+      }, {});
+
+      // Convert back to array and sort by date
+      const consolidatedData = Object.values(dailyData).sort((a, b) =>
+        new Date(a.timestamp) - new Date(b.timestamp)
+      );
+
+      console.log('Consolidated daily history:', consolidatedData);
 
       // Transform the data to match the expected format for the chart
-      const transformedData = data.map(record => ({
+      const transformedData = consolidatedData.map(record => ({
         timestamp: new Date(record.timestamp).getTime(),
         total_balance: Number(record.total_balance),
         exchanges: [
