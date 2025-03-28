@@ -1,5 +1,12 @@
 import { supabase } from '../lib/supabase';
 
+export const TIME_RANGES = {
+  WEEK: '7d',
+  MONTH: '30d',
+  QUARTER: '90d',
+  ALL: 'all'
+};
+
 export const balanceHistoryService = {
   async saveBalance(totalUSD, exchanges) {
     try {
@@ -36,19 +43,22 @@ export const balanceHistoryService = {
     }
   },
 
-  async getHistory() {
-    console.log('Fetching balance history from Supabase...');
+  async getHistory(timeRange = TIME_RANGES.MONTH) {
+    console.log('Fetching balance history from Supabase...', { timeRange });
     try {
-      // Get data from the last 30 days
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-      // First, get all data points from the last 30 days
-      const { data, error } = await supabase
+      let query = supabase
         .from('crypto_balance_history')
-        .select('*')
-        .gte('timestamp', thirtyDaysAgo.toISOString())
-        .order('timestamp', { ascending: true });
+        .select('*');
+
+      // Apply time range filter
+      if (timeRange !== TIME_RANGES.ALL) {
+        const daysToSubtract = parseInt(timeRange);
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - daysToSubtract);
+        query = query.gte('timestamp', startDate.toISOString());
+      }
+
+      const { data, error } = await query.order('timestamp', { ascending: true });
 
       if (error) {
         console.error('Supabase select error:', error);

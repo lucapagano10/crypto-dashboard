@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardBody,
@@ -11,6 +11,8 @@ import {
   StatLabel,
   StatNumber,
   StatArrow,
+  Button,
+  ButtonGroup,
 } from '@chakra-ui/react';
 import {
   AreaChart,
@@ -21,6 +23,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import { TIME_RANGES } from '../services/balanceHistoryService';
 
 const formatDate = (timestamp) => {
   const date = new Date(timestamp);
@@ -51,12 +54,18 @@ const MetricCard = ({ label, change, percentage }) => (
   </Stat>
 );
 
-export const BalanceChart = ({ history, metrics }) => {
-  const data = history.map(item => ({
-    date: formatDate(item.timestamp),
+export const BalanceChart = ({ history, metrics, onTimeRangeChange }) => {
+  const [selectedRange, setSelectedRange] = useState(TIME_RANGES.MONTH);
+
+  const handleRangeChange = (range) => {
+    setSelectedRange(range);
+    onTimeRangeChange(range);
+  };
+
+  const data = history.map((item) => ({
+    date: new Date(item.timestamp).toLocaleDateString(),
     balance: item.total_balance,
-    timestamp: item.timestamp,
-  })).sort((a, b) => a.timestamp - b.timestamp); // Sort by timestamp
+  }));
 
   return (
     <Grid templateColumns="repeat(4, 1fr)" gap={6}>
@@ -102,7 +111,35 @@ export const BalanceChart = ({ history, metrics }) => {
         <Card bg="gray.900" borderRadius="xl" border="1px solid" borderColor="gray.800">
           <CardBody>
             <VStack spacing={4} align="stretch">
-              <Text color="gray.400" fontSize="sm">Balance History</Text>
+              <HStack justify="space-between" align="center">
+                <Text color="gray.400" fontSize="sm">Balance History</Text>
+                <ButtonGroup size="sm" isAttached variant="outline">
+                  <Button
+                    onClick={() => handleRangeChange(TIME_RANGES.WEEK)}
+                    colorScheme={selectedRange === TIME_RANGES.WEEK ? 'purple' : 'gray'}
+                  >
+                    7D
+                  </Button>
+                  <Button
+                    onClick={() => handleRangeChange(TIME_RANGES.MONTH)}
+                    colorScheme={selectedRange === TIME_RANGES.MONTH ? 'purple' : 'gray'}
+                  >
+                    30D
+                  </Button>
+                  <Button
+                    onClick={() => handleRangeChange(TIME_RANGES.QUARTER)}
+                    colorScheme={selectedRange === TIME_RANGES.QUARTER ? 'purple' : 'gray'}
+                  >
+                    90D
+                  </Button>
+                  <Button
+                    onClick={() => handleRangeChange(TIME_RANGES.ALL)}
+                    colorScheme={selectedRange === TIME_RANGES.ALL ? 'purple' : 'gray'}
+                  >
+                    ALL
+                  </Button>
+                </ButtonGroup>
+              </HStack>
               <div style={{ width: '100%', height: 300 }}>
                 <ResponsiveContainer>
                   <AreaChart data={data} margin={{ top: 5, right: 30, bottom: 5, left: 10 }}>

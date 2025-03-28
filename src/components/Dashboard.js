@@ -41,7 +41,7 @@ import {
 } from '@chakra-ui/react';
 import { RepeatIcon, DeleteIcon, LockIcon } from '@chakra-ui/icons';
 import { exchangeService } from '../services/exchangeService';
-import { balanceHistoryService } from '../services/balanceHistoryService';
+import { balanceHistoryService, TIME_RANGES } from '../services/balanceHistoryService';
 import { BalanceChart } from './BalanceChart';
 
 export const Dashboard = () => {
@@ -58,17 +58,18 @@ export const Dashboard = () => {
 
   const [history, setHistory] = useState([]);
   const [metrics, setMetrics] = useState(null);
+  const [timeRange, setTimeRange] = useState(TIME_RANGES.MONTH);
 
   useEffect(() => {
     const loadHistory = async () => {
-      const historyData = await balanceHistoryService.getHistory();
+      const historyData = await balanceHistoryService.getHistory(timeRange);
       const metricsData = await balanceHistoryService.getMetrics();
       setHistory(historyData);
       setMetrics(metricsData);
     };
 
     loadHistory();
-  }, []);
+  }, [timeRange]);
 
   const renderExchangeContent = (exchangeName) => {
     const exchangeData = balances.find((b) => b.exchange === exchangeName);
@@ -173,6 +174,10 @@ export const Dashboard = () => {
 
   const getTotalBalance = () => {
     return balances.reduce((sum, exchange) => sum + exchange.totalUSD, 0);
+  };
+
+  const handleTimeRangeChange = async (newRange) => {
+    setTimeRange(newRange);
   };
 
   return (
@@ -299,7 +304,11 @@ export const Dashboard = () => {
             </CardBody>
           </Card>
 
-          <BalanceChart history={history} metrics={metrics} />
+          <BalanceChart
+            history={history}
+            metrics={metrics}
+            onTimeRangeChange={handleTimeRangeChange}
+          />
         </VStack>
       </Container>
 
