@@ -1,30 +1,26 @@
 import { supabase } from '../lib/supabase';
 
-const HISTORY_KEY = 'balance_history';
-const MAX_HISTORY_ITEMS = 30; // Store 30 days of history
-
 export const balanceHistoryService = {
   async saveBalance(totalUSD, exchanges) {
-    const timestamp = Date.now();
-    console.log('Attempting to save balance:', {
-      timestamp,
-      totalUSD,
-      exchanges: exchanges.map(e => ({
-        exchange: e.exchange,
-        balance: e.totalUSD
-      }))
-    });
+    const timestamp = new Date();
 
     try {
+      // Find balances for each exchange
+      const bybitExchange = exchanges.find(e => e.exchange === 'Bybit');
+      const okx1Exchange = exchanges.find(e => e.exchange === 'OKX 1');
+      const okx2Exchange = exchanges.find(e => e.exchange === 'OKX 2');
+
       const { data, error } = await supabase
-        .from('balances')
+        .from('crypto_balance_history')
         .insert([{
           timestamp,
+          bybit_balance: bybitExchange?.totalUSD || 0,
+          okx1_balance: okx1Exchange?.totalUSD || 0,
+          okx2_balance: okx2Exchange?.totalUSD || 0,
           total_balance: totalUSD,
-          exchanges: exchanges.map(e => ({
-            exchange: e.exchange,
-            balance: e.totalUSD
-          }))
+          spot_balance: totalUSD, // For now, treating all as spot balance
+          snapshot_source: 'automatic',
+          currency: 'USD'
         }]);
 
       if (error) {
@@ -46,7 +42,7 @@ export const balanceHistoryService = {
     console.log('Fetching balance history from Supabase...');
     try {
       const { data, error } = await supabase
-        .from('balances')
+        .from('crypto_balance_history')
         .select('*')
         .order('timestamp', { ascending: true })
         .limit(30);
@@ -57,7 +53,19 @@ export const balanceHistoryService = {
       }
 
       console.log('Retrieved history from Supabase:', data);
-      return data || [];
+
+      // Transform the data to match the expected format for the chart
+      const transformedData = data.map(record => ({
+        timestamp: new Date(record.timestamp).getTime(),
+        total_balance: Number(record.total_balance),
+        exchanges: [
+          { exchange: 'Bybit', balance: Number(record.bybit_balance) },
+          { exchange: 'OKX 1', balance: Number(record.okx1_balance) },
+          { exchange: 'OKX 2', balance: Number(record.okx2_balance) }
+        ]
+      }));
+
+      return transformedData;
     } catch (error) {
       console.error('Error getting history:', error);
       return [];
