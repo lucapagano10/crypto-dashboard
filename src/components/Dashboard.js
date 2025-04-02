@@ -204,6 +204,37 @@ export const Dashboard = () => {
               >
                 Refresh Balances
               </Button>
+              <Button
+                variant="outline"
+                colorScheme="purple"
+                onClick={async () => {
+                  try {
+                    await balanceHistoryService.deleteOldRecords();
+                    toast({
+                      title: 'Old records deleted',
+                      description: 'Successfully deleted records before March 28, 2025',
+                      status: 'success',
+                      duration: 5000,
+                      isClosable: true,
+                    });
+                    // Refresh the history
+                    const historyData = await balanceHistoryService.getHistory();
+                    const metricsData = await balanceHistoryService.getMetrics();
+                    setHistory(historyData);
+                    setMetrics(metricsData);
+                  } catch (error) {
+                    toast({
+                      title: 'Error deleting old records',
+                      description: error.message,
+                      status: 'error',
+                      duration: 5000,
+                      isClosable: true,
+                    });
+                  }
+                }}
+              >
+                Clean Old Data
+              </Button>
               <Tooltip label="Clear all API credentials">
                 <Button
                   variant="outline"

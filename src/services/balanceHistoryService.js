@@ -8,6 +8,27 @@ export const TIME_RANGES = {
 };
 
 export const balanceHistoryService = {
+  async deleteOldRecords() {
+    try {
+      const cutoffDate = new Date('2025-03-28');
+      const { data, error } = await supabase
+        .from('crypto_balance_history')
+        .delete()
+        .lt('timestamp', cutoffDate.toISOString());
+
+      if (error) {
+        console.error('Error deleting old records:', error);
+        throw error;
+      }
+
+      console.log('Successfully deleted old records:', data);
+      return data;
+    } catch (error) {
+      console.error('Error deleting old records:', error);
+      throw error;
+    }
+  },
+
   async saveBalance(totalUSD, exchanges) {
     try {
       // Find balances for each exchange
