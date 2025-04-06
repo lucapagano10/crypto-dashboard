@@ -247,17 +247,7 @@ class ExchangeService {
   async getAllBalances() {
     const results = await Promise.all([
       this.getBybitBalance(),
-      ...this.okxAccounts.map(account => this.getOKXBalance(account)),
-      Promise.resolve({
-        exchange: 'Savings Bank',
-        balances: [{
-          asset: 'USD',
-          free: 9000,
-          locked: 0,
-          total: 9000
-        }],
-        totalUSD: 9000
-      })
+      ...this.okxAccounts.map(account => this.getOKXBalance(account))
     ]);
 
     return results;
