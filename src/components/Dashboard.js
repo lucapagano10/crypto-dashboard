@@ -109,18 +109,25 @@ export const Dashboard = () => {
 
   const fetchBalances = async () => {
     try {
+      console.log('Starting to fetch balances...');
       setIsLoading(true);
       const data = await exchangeService.getAllBalances();
+      console.log('Received balances from exchanges:', data);
       setBalances(data);
 
       // Save balance history
       const totalUSD = data.reduce((sum, exchange) => sum + exchange.totalUSD, 0);
+      console.log('Saving new balance history with total USD:', totalUSD);
       const updatedHistory = await balanceHistoryService.saveBalance(totalUSD, data);
 
       // Update history and metrics
+      console.log('Updating history and metrics...');
       setHistory(updatedHistory);
-      setMetrics(await balanceHistoryService.getMetrics());
+      const newMetrics = await balanceHistoryService.getMetrics();
+      console.log('New metrics:', newMetrics);
+      setMetrics(newMetrics);
     } catch (error) {
+      console.error('Error in fetchBalances:', error);
       toast({
         title: 'Error fetching balances',
         description: 'Please check your API credentials and try again.',
@@ -130,6 +137,7 @@ export const Dashboard = () => {
       });
     } finally {
       setIsLoading(false);
+      console.log('Finished fetching balances');
     }
   };
 
@@ -270,7 +278,7 @@ export const Dashboard = () => {
                       <AccordionIcon color="brand.400" />
                     </AccordionButton>
                     <AccordionPanel pb={4} px={0}>
-                      <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+                      <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4}>
                         <Card bg="gray.800" borderRadius="xl" border="1px solid" borderColor="gray.700">
                           <CardBody>
                             <VStack align="stretch" spacing={4}>
@@ -324,6 +332,15 @@ export const Dashboard = () => {
                               >
                                 Set API Credentials
                               </Button>
+                            </VStack>
+                          </CardBody>
+                        </Card>
+
+                        <Card bg="gray.800" borderRadius="xl" border="1px solid" borderColor="gray.700">
+                          <CardBody>
+                            <VStack align="stretch" spacing={4}>
+                              <Heading size="md" color="white">Cash</Heading>
+                              {renderExchangeContent('Cash')}
                             </VStack>
                           </CardBody>
                         </Card>
