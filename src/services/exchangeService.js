@@ -250,18 +250,18 @@ class ExchangeService {
       ...this.okxAccounts.map(account => this.getOKXBalance(account))
     ]);
 
-    // Add fixed Cash balance of $30,000
+    // Add fixed Cash balance of $50,000
     results.push({
       exchange: 'Cash',
       balances: [
         {
           asset: 'USD',
-          free: 30000,
+          free: 50000,
           locked: 0,
-          total: 30000
+          total: 50000
         }
       ],
-      totalUSD: 30000
+      totalUSD: 50000
     });
 
     return results;
